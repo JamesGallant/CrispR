@@ -1,4 +1,7 @@
-library(optparse)
+if(!require(outparse)){
+  install.packages("outparse")
+  library(somepackage)
+}
 
 option_list = list(
   make_option("--method", type = "character", default = NULL, action = "store",
@@ -56,7 +59,11 @@ build_genome_package <- function(PATH, OUT_DIR){
   if (is.null(PATH)) {
     stop("Requires a folder built with forge_genome_package")
   } else {
-    require(devtools)
+    
+    if(!require(devtools)){
+      install.packages("devtools")
+    }
+    
     devtools::build(pkg = PATH, path = OUT_DIR)
   }
 }
