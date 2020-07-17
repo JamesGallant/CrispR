@@ -1,0 +1,19 @@
+Package:BSgenome.Mtuberculosis.VUmc.H37Rv
+Title: Full genome sequence of Mycobacterium tuberculosis H37Rv
+Description: BSgenome genome sequence for M.tuberculosis H37Rv obtained from tuberculist and edited fasta header
+Version: 20.07
+Author: James Gallant
+License: GPLv3
+organism: Mycobacterium tuberculosis H37Rv
+common_name: Mtb
+provider: VUmc
+provider_version: H37Rv
+release_date: 2018-06-05
+release_name: VUmc James Gallant H37Rv
+source_url: https://mycobrowser.epfl.ch/releases/3/get_file?dir=fasta&file=Mycobacterium_tuberculosis_H37Rv.fasta
+organism_biocview: Mycobacterium_tuberculosis
+BSgenomeObjname: Mtuberculosis
+seqnames: "NC_000962.3"
+SrcDataFiles: Mycobacterium_tuberculosis_H37Rv.fasta, https://mycobrowser.epfl.ch/releases/3/get_file?dir=fasta&file=Mycobacterium_tuberculosis_H37Rv.fasta
+seqs_srcdir: D:\Eigenaara\Documents\Python_apps\CrispR\references\fasta
+
