@@ -15,27 +15,61 @@ class BSgenome:
 		self.package_dir = os.path.join(self.root, "R/local_packages")
 
 
-	def _get_version_number(self, seedfile):
+	def _dcf_metadata(self, seedfile, extract):
+		"""
+		Possible error handling needed: Is the extract valid?
+		Requires a dcf file (seed file, full path) and a keyword to extract
+		Returns string
+		"""
+
+		if os.path.splitext(seedfile)[1] != ".dcf":
+			raise ValueError("dcf extention not detected, is this a dcf file?")
+
 		with open(seedfile, 'r') as dcf_file:
 			for line in dcf_file:
-				if "Version:" in line:
+				if extract in line:
 					return line.split()[1]
 				
 
-	def _package_exists(self):
-		pass
+	def package_exists(self, path_to_package):
+		subprocess.call(['Rscript','--vanilla', self.genome_build_funcs, '--method', 'Detect',
+			'--path', path_to_package], shell=True)
+
+		shutil.rmtree(os.path.join(self.root, "temp"), ignore_errors=True)
+
 
 	def list_help(self):
-		pass
+		"""
+		List th help in R
+		"""
+		subprocess.call(['Rscript','--vanilla', self.genome_build_funcs, '--help'], shell=True)
+		shutil.rmtree(os.path.join(self.root, "temp"), ignore_errors=True)
+
 
 	def list_methods(self):
-		""""
+		"""
 		Lists the availible options in the Rscript
 		"""
 		subprocess.call(['Rscript','--vanilla', self.genome_build_funcs, '--method', 'list_options'], shell=True)
+		shutil.rmtree(os.path.join(self.root, "temp"), ignore_errors=True)
 
 
-	def bsgenome_from_seed(self, seedfile, package_name):
+	def remove_package(self, seedfile):
+		"""
+		Requires the package name only, handle paths internally
+		"""
+		subprocess.call(['Rscript', 
+			'--vanilla', 
+			self.genome_build_funcs, 
+			'--method', 'Remove',
+			'--package', self._dcf_metadata(seedfile=seedfile, extract="Package")], 
+			shell=True)
+
+		shutil.rmtree(os.path.join(self.root, "temp"), ignore_errors=True)
+
+
+
+	def bsgenome_from_seed(self, seedfile):
 		"""
 		requires a seed file (SEED). 
 		see https://www.bioconductor.org/packages//2.7/bioc/vignettes/BSgenome/inst/doc/BSgenomeForge.pdf on how to make one
@@ -52,14 +86,14 @@ class BSgenome:
 			'--vanilla', 
 			self.genome_build_funcs, 
 			'--method', 'Build',
-			'--path', os.path.join(self.root, "temp", package_name),
+			'--path', os.path.join(self.root, "temp", self._dcf_metadata(seedfile=seedfile, extract='Package')),
 			'--out_dir', self.package_dir], shell=True)
 
 		subprocess.call(['Rscript', 
 			'--vanilla', 
 			self.genome_build_funcs, 
 			'--method', 'Install',
-			'--path', os.path.join(self.package_dir, f"{package_name}_{self._get_version_number(seedfile)}.tar.gz")], shell=True)
+			'--path', os.path.join(self.package_dir, f"{self._dcf_metadata(seedfile=seedfile, extract='Package')}_{self._dcf_metadata(seedfile=seedfile, extract='Version')}.tar.gz")], shell=True)
 
 		shutil.rmtree(os.path.join(self.root, "temp"), ignore_errors=True)
 

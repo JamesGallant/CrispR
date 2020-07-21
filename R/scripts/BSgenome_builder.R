@@ -1,6 +1,5 @@
-if(!require(outparse)){
-  install.packages("outparse")
-  library(somepackage)
+if(!require(optparse)){
+  install.packages("optparse")
 }
 
 option_list = list(

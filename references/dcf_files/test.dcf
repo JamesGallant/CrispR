@@ -1,0 +1,19 @@
+Package: BSgenome.testorg.test
+Title: Test BSgenome package
+Description: Test BSgenome package
+Version: 0.0
+Author: James Gallant
+License: GPLv3
+organism: Test_organism
+common_name: Test
+provider: VUmc
+provider_version: test
+release_date: 2018-06-05
+release_name: NA
+source_url: https://mycobrowser.epfl.ch/releases/3/get_file?dir=fasta&file=Mycobacterium_tuberculosis_H37Rv.fasta
+organism_biocview: Mycobacterium_tuberculosis
+BSgenomeObjname: Test
+seqnames: "test"
+SrcDataFiles: Mycobacterium_tuberculosis_H37Rv.fasta, https://mycobrowser.epfl.ch/releases/3/get_file?dir=fasta&file=Mycobacterium_tuberculosis_H37Rv.fasta
+seqs_srcdir: D:\Eigenaara\Documents\Python_apps\CrispR\references\fasta\test
+
