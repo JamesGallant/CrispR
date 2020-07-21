@@ -31,4 +31,8 @@ Make your changes and run the unit tests to verify that everything still works. 
 ```
 py -m unittest . discover
 ```
-If everything passes then submit a pull request. 
+If everything passes then submit a pull request.
+
+# To do
+* Create python bindings for the TxDB and guide RNA R scripts. Also unit tests to verify that the files are being made, this should be enough. 
+* Create python utility scripts to handle the output from R and choose optimal gRNA's
