@@ -29,7 +29,7 @@ git checkout -b yourversion
 ```
 Make your changes and run the unit tests to verify that everything still works. Also add unit tests for any new critical functions. 
 ```
-py -m unittest . discover
+py -m unittest discover .
 ```
 If everything passes then submit a pull request.
 
