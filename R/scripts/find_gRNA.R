@@ -29,7 +29,7 @@ avail_methods <- function(){
 generate_config <- function(out_file){
   df <- data.frame(organism = "Organism name",
                    circular_chromosome = "logical TRUE/FALSE",
-                   input_file = "path to fasta file",
+                   input_file = "path to input fasta file",
                    gff_file = "Path to gff file",
                    find_gRNA_with_cutsites = "logical TRUE/FALSE",
                    find_paired_gRNA = "logical TRUE/FALSE",

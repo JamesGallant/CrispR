@@ -1,2 +1,0 @@
-organism	circular_chromosome	input_file	gff_file	find_gRNA_with_cutsites	find_paired_gRNA	BSgenome	chromosomes_to_search	min_gap	max_gap	max_mismatch_gRNA	PAM_sequence	gRNA_size	scoring_method
-Mycobacterium tuberculosis	TRUE	D:\Eigenaara\Documents\Python_apps\CrispR\references\gRNA\input.fa	D:\Eigenaara\Documents\Python_apps\CrispR\references\gRNA\test_gff.gff	TRUE	FALSE	BSgenome.Mtuberculosis.VUmc.H37Rv	all	0	20	4	AGAA	20	Hsu-Zhang
