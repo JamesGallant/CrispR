@@ -1,8 +1,8 @@
 import os
-import sqlite3
-from sqlite3 import Error
 import pandas as pd
+import sqlite3
 
+from sqlite3 import Error
 
 def _create_connection(db_file):
 	conn = None
@@ -30,15 +30,15 @@ class Database:
 
 	def create_new_database(self, name, gff_file):
 		"""
-		requires a name for the database and the associated gff file
-		no extention needed 
+		requires a name for the database, the associated gff file path and a path to a fasta file with the all the genes
+		no extention needed  for name
 		"""
 		connection = _create_connection(db_file=os.path.join(self.root, "databases", f"{name}.db"))		
 
 		gff = pd.read_csv(filepath_or_buffer=gff_file, sep="\t", names=self.gff_headers)
 
 		gff.to_sql(name = "gff_file", con=connection, if_exists='replace', index = False)
-
+		
 
 	def list_databases(self):
 		return [databases for databases in os.listdir(os.path.join(self.root, "databases"))]
