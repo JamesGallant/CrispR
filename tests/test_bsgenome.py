@@ -6,10 +6,10 @@ from utilities.build_reference import BSgenome
 bsgenome = BSgenome()
 
 def build_bsgenome():
-	bsgenome.bsgenome_from_seed(seedfile="D:\\Eigenaara\\Documents\\Python_apps\\CrispR\\references\\dcf_files\\test.dcf")
+	bsgenome.bsgenome_from_seed(seedfile="D:\\Eigenaara\\Documents\\Python_apps\\CrispR\\tests\\testing_resources\\test.dcf")
 
 def remove_test_package():
-	bsgenome.remove_package(seedfile="D:\\Eigenaara\\Documents\\Python_apps\\CrispR\\references\\dcf_files\\test.dcf")
+	bsgenome.remove_package(seedfile="D:\\Eigenaara\\Documents\\Python_apps\\CrispR\\tests\\testing_resources\\test.dcf")
 
 def file_creation():
 	root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

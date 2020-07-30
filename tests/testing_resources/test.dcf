@@ -15,5 +15,5 @@ organism_biocview: Mycobacterium_tuberculosis
 BSgenomeObjname: Test
 seqnames: "test"
 SrcDataFiles: Mycobacterium_tuberculosis_H37Rv.fasta, https://mycobrowser.epfl.ch/releases/3/get_file?dir=fasta&file=Mycobacterium_tuberculosis_H37Rv.fasta
-seqs_srcdir: D:\Eigenaara\Documents\Python_apps\CrispR\references\fasta\test
+seqs_srcdir: D:\Eigenaara\Documents\Python_apps\CrispR\tests\testing_resources\test
 
