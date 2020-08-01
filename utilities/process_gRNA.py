@@ -101,45 +101,73 @@ class Process:
 		return candidates, backup, dropped_gRNA
 
 
-	def gRNA_second_pass(self):
+
+
+	def correct_gRNA_dictionary(self, canidates, backup, dropped_gRNA):
 		"""
-		returns a dictionary
-
-		"""
-		candidates, backup, _ = self.gRNA_first_pass()
-
-
-
-	def correct_gRNA_dictionary(self):
-		"""
-		returns a dictionary
-		checks if gRNA's are in backup and not featured in the invalids or the valids. In this case the guide RNA from a specific
-		gene needs to be moved for further processing. This function assumes that invalids are ground truth and if a gRNA is found 
-		in backup and invalid the gRNA will be reassigned in invalid. If it not found in valids then it will be moved to valid 
+		returns a mulitple dictionary
+		checks if gRNA's are in backup and not featured in the valids. In this case the guide RNA from a specific
+		gene needs to be moved for further processing. If it not found in valids then it will be moved to valid 
 		which disregards previous filtering criteria to reduce gRNA loss.
 		"""
+		def _split(input_dict, splitter, idx):
+			"""
+			Takes a dictionary, returns a list
+			"""
+			return list(set([genes.split(splitter)[idx] for genes in input_dict['name']]))
+
+		def _get_index(dataframe, identifier):
+			"""
+			takes a dictionary and a string. The identifier is a substring that will be matched to the main string in the 
+			dataframe. retruns the index.
+			"""
+			for idx, value in backup.iterrows():
+				if str(value['name']).find(identifier) == 0:
+					return idx
+
+		def _check_altered_dict(input_dict, identifier):
+			"""
+			Error handling step, if items are erroneously moved it will be caught here
+			"""
+			for _, items in input_dict.items():
+				if str(items.values()).find(identifier) != -1:
+					raise ValueError(f"Critical error, dictionary correction failed. identifier {identifier} is present in wrong dictionary")
+
+
+		#candidates, backup, dropped_gRNA = self.gRNA_first_pass()
+
+		valids = _split(input_dict=candidates, splitter="_", idx=0)
+		backup_genes = _split(input_dict=backup, splitter="_", idx=0)
+
 		genes_nogRNA_present = self.no_detection()
-		candidates, backup, dropped_gRNA = self.gRNA_first_pass()
-
-		valids = list(set([genes.split("_")[0] for genes in candidates['name']]))
-		backup_genes = list(set([genes.split("_")[0] for genes in backup['name']]))
-
 		invalid1 = list(set([genes.split("_")[0] for genes in genes_nogRNA_present['name']]))
 		invalid2 = list(set([genes.split("_")[0] for genes in dropped_gRNA['name']]))
-
 		invalids = list(set(invalid1+invalid2) - set(valids))
 
-		
-		#backup_genes = ["Rv0001", 'Rv3868', 'Rv3875']
-		
 		for genes in backup_genes:
 			if genes not in valids:
 				if genes not in invalids:
-					print(f"{genes} move to candidates")
+					#moves backup genes back to candidates
+					backup = pd.DataFrame(backup_dict)
+					backup_row_idx = _get_index(dataframe=backup, identifier=genes)
+					candidates['name'].append(backup.iloc[backup_row_idx, 0])
+					candidates['gRNA'].append(backup.iloc[backup_row_idx, 1])
+					backup.drop(backup.index[[1]], inplace=True)
+					backup = backup.to_dict()
+					_check_altered_dict(input_dict=backup, identifier=genes)
 				else:
-					print(f"{genes} move to invalid")
-			else:
-				print(f"{genes} stay as a backup")
+					#Moves guide RNA's between backup and invalid think if this makes sense
+					pass
+
+		return candidates, backup, dropped_gRNA
+
+
+	def check_offtarget_effects(self):
+		"""
+		In this function the canidate gRNA's will be cross referenced with the off target effects. candidates will be moved between
+		backup and valids iteratively
+		"""
+		pass
 
 
 
