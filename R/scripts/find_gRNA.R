@@ -56,9 +56,7 @@ create_txdb <- function(path_to_gff, organism, circular_chroms, bsgenome_info){
   library(bsgenome_info, character.only = TRUE)
   
   bsgenome_data <- eval(as.name(paste(bsgenome_info)))
-  
   chromosomes <- seqnames(bsgenome_data)
-
   chrom_len <- sapply(chromosomes, function(x){ return(length(bsgenome_data[[x]]))})
   if (circular_chroms) {
     circ <- sapply(1:length(chromosomes), function(x){return(TRUE)})
@@ -106,10 +104,12 @@ create_gRNA_library <- function(config_file){
                     chromToSearch = config[["chromosomes_to_search"]],
                     min.gap = config[["min_gap"]], 
                     max.gap = config[["max_gap"]],
+                    gRNA.size = config[["gRNA_size"]],
                     txdb = txdb_file,
                     max.mismatch = config[["max_mismatch_gRNA"]],
                     outputDir = command_args$out_dir, overwrite = T, 
                     PAM = config[["PAM_sequence"]],
+                    PAM.size = config[["PAM_length"]],
                     scoring.method = config[["scoring_method"]])
 }
 

@@ -54,7 +54,7 @@ class BSgenome:
 		shutil.rmtree(os.path.join(self.root, "temp"), ignore_errors=True)
 
 
-	def remove_package(self, seedfile):
+	def remove_package(self, package):
 		"""
 		Requires the package name only, handle paths internally
 		"""
@@ -62,7 +62,7 @@ class BSgenome:
 			'--vanilla', 
 			self.genome_build_funcs, 
 			'--method', 'Remove',
-			'--package', self._dcf_metadata(seedfile=seedfile, extract="Package")], 
+			'--package', package], 
 			shell=True)
 
 		shutil.rmtree(os.path.join(self.root, "temp"), ignore_errors=True)
@@ -80,20 +80,22 @@ class BSgenome:
 			self.genome_build_funcs, 
 			'--method', 'Forge',
 			'--path', seedfile,
-			'--out_dir', self.tempdir], shell=True)
+			'--out_dir', self.tempdir], shell=False)
 
 		subprocess.call(['Rscript', 
 			'--vanilla', 
 			self.genome_build_funcs, 
 			'--method', 'Build',
 			'--path', os.path.join(self.root, "temp", self._dcf_metadata(seedfile=seedfile, extract='Package')),
-			'--out_dir', self.package_dir], shell=True)
+			'--out_dir', self.package_dir], shell=False)
 
 		subprocess.call(['Rscript', 
 			'--vanilla', 
 			self.genome_build_funcs, 
 			'--method', 'Install',
-			'--path', os.path.join(self.package_dir, f"{self._dcf_metadata(seedfile=seedfile, extract='Package')}_{self._dcf_metadata(seedfile=seedfile, extract='Version')}.tar.gz")], shell=True)
+			'--path', os.path.join(self.package_dir, 
+				f"{self._dcf_metadata(seedfile=seedfile, extract='Package')}_{self._dcf_metadata(seedfile=seedfile, extract='Version')}.tar.gz")], 
+			shell=False)
 
 		shutil.rmtree(os.path.join(self.root, "temp"), ignore_errors=True)
 
