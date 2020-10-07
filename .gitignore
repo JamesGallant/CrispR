@@ -4,3 +4,4 @@ test.py
 gRNA_tests/
 **/__pycache__
 __pycache__
+.idea/
