@@ -5,3 +5,5 @@ gRNA_tests/
 **/__pycache__
 __pycache__
 .idea/
+desktop.ini
+inno.iss

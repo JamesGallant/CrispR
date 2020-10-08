@@ -233,6 +233,7 @@ class CrisprInterference_worker(QtCore.QRunnable):
 
                 if grna_pam != offtarget_pam:
                     availible_pams = possible_pams_ranked(cas9=self.cas9_organism).keys()
+                    print(f"oftarget: {offtarget_pam}, avail: {availible_pams}")
                     if offtarget_pam not in availible_pams:
                         grna_dataframe['notes'][index_location] = "PASS: offtarget pam is invalid"
 
@@ -373,12 +374,12 @@ class CrisprInterference_worker(QtCore.QRunnable):
                 primer_wo_pam_stop = primer_wo_pam_start + 20  # 20 is the primer length, fixed value
 
                 if primer_wo_pam_stop + max_primer_size < len(gene_sequence):
-                    counter = 1
+                    counter = 0
                     while counter <= max_primer_size:
                         target_base_location = primer_wo_pam_stop + counter
                         target_base = sequence_swapped[target_base_location]
                         if target_base == "a" or target_base == "g":
-                            grna_out = sequence_swapped[loc_in_gene:target_base_location]
+                            grna_out = sequence_swapped[loc_in_gene:target_base_location+1]
                             grna_out = grna_out[::-1]
                             dataframe['gRNA'][idx] = grna_out.upper()
 
@@ -397,11 +398,10 @@ class CrisprInterference_worker(QtCore.QRunnable):
                     else:
 
                         while counter < len(gene_sequence):
-                            print()
                             target_base_location = primer_wo_pam_stop + counter
                             target_base = sequence_swapped[target_base_location]
                             if target_base == "a" or target_base == "g":
-                                grna_out = sequence_swapped[loc_in_gene:target_base_location]
+                                grna_out = sequence_swapped[loc_in_gene:target_base_location+1]
                                 grna_out = grna_out[::-1]
                                 dataframe['gRNA'][idx] = grna_out.upper()
 

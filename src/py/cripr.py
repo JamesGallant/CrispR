@@ -1,8 +1,6 @@
 import pandas as pd
 
 from src.py import utilities
-from collections import Counter
-
 
 class RefineCripri:
     """
@@ -20,7 +18,7 @@ class RefineCripri:
         rank_df = self.utils.rank_pams(dictionary=self.grna_dataframe.to_dict('list'))
         rank_df = pd.DataFrame(rank_df)
 
-        score = [row['rank'] + 0.5 if row['gRNAsPlusPAM'][0] == "A" or row['gRNAsPlusPAM'][0] == "G" else row['rank']
+        score = [row['rank'] + 0.5 if row['gRNAsPlusPAM'][0] == "C" or row['gRNAsPlusPAM'][0] == "T" else row['rank']
                  for idx, row in rank_df.iterrows()]
 
         rank_df['score'] = score

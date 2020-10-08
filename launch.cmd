@@ -1,0 +1,1 @@
+start /d "C:\Program Files (x86)\Crispinator" Crispinator.exe

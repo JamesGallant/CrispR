@@ -1,5 +1,7 @@
-# Statistics tab interactions are buggy, split helper function to account for different user choices
-import sys
+#pyinstaller --onefile --path ./venv/site-packages -w file.py
+#bat file to point to exe
+#shortcut as launcher -> set admin privalages here
+import sys, os
 import qdarkstyle
 import shutil
 import sqlite3
@@ -14,7 +16,7 @@ from src.py.database_tools import Database, SQL
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.root = os.getcwd()
+        self.root = os.path.dirname(os.path.abspath(__file__))
         super().__init__()
         self.threadingPool = QtCore.QThreadPool()
         self.candidate_gRNA_df = None
