@@ -2,6 +2,7 @@ import pandas as pd
 
 from src.py import utilities
 
+
 class RefineCripri:
     """
     Dataframe is a pandas dataframe
@@ -11,11 +12,12 @@ class RefineCripri:
         self.grna_dataframe = grna_dataframe
         self.strand = strand
         self.fasta = fasta_dataframe
-        self.utils = utilities.CrispinatorUitls(cas9=cas9)
+        self.utils = utilities.CrispinatorUitls()
+        self.cas9 = cas9
         self.ranked_data = self.initial_scoring()
 
     def initial_scoring(self):
-        rank_df = self.utils.rank_pams(dictionary=self.grna_dataframe.to_dict('list'))
+        rank_df = self.utils.rank_pams(dictionary=self.grna_dataframe.to_dict('list'), cas9=self.cas9)
         rank_df = pd.DataFrame(rank_df)
 
         score = [row['rank'] + 0.5 if row['gRNAsPlusPAM'][0] == "C" or row['gRNAsPlusPAM'][0] == "T" else row['rank']
@@ -81,7 +83,8 @@ class RefineCripri:
         dropped.reset_index(inplace=True, drop=True)
 
         drop_notes = ["Primer on the reverse strand"] * len(dropped.index)
-        candidates_notes = ["position 20 is C/T" if row['score'] % 1 == 0.5 else "PASS" for _, row in candidates.iterrows()]
+        candidates_notes = ["position 20 is C/T" if row['score'] % 1 == 0.5 else "PASS" for _, row in
+                            candidates.iterrows()]
         backup_notes = ["position 20 is C/T" if row['score'] % 1 == 0.5 else f"PASS: PAM Rank is {row['score']}" for
                         _, row in backup.iterrows()]
 
@@ -92,7 +95,6 @@ class RefineCripri:
         candidates.drop(['top5OfftargetTotalScore', 'primer_length', 'mismatch_length'], axis=1, inplace=True)
         backup.drop(['top5OfftargetTotalScore', 'primer_length', 'mismatch_length'], axis=1, inplace=True)
         dropped.drop(['top5OfftargetTotalScore', 'primer_length', 'mismatch_length'], axis=1, inplace=True)
-
 
         return candidates.to_dict('list'), backup.to_dict('list'), dropped.to_dict('list')
 
@@ -147,7 +149,7 @@ class RefineCripri:
         """
 
         ranked_df = pd.DataFrame(self.ranked_data)
-        #candidates = pd.DataFrame(candidates)
+        # candidates = pd.DataFrame(candidates)
         for identifiers in candidates["names"]:
             cross_reference = ranked_df.loc[ranked_df['names'] == identifiers].to_dict()
             off_target_presence = str(list(cross_reference['top5OfftargetTotalScore'].values())[0])
@@ -156,8 +158,8 @@ class RefineCripri:
                 backup['gRNA'].append(str(list(cross_reference['gRNA'].values())[0]))
                 backup['PAM'].append(str(list(cross_reference['PAM'].values())[0]))
                 backup['rank'].append(str(list(cross_reference['rank'].values())[0]))
-                #backup['genes'].append(str(list(cross_reference['genes'].values())[0]))
-                backup['score'].append(str(list(cross_reference['score'].values())[0]))
+                # backup['genes'].append(str(list(cross_reference['genes'].values())[0]))
+                backup['score'].append(int(list(cross_reference['score'].values())[0]))
                 backup['notes'].append("Has off target")
 
                 candidates = pd.DataFrame(candidates)
@@ -165,9 +167,17 @@ class RefineCripri:
                 candidates.reset_index(drop=True, inplace=True)
                 candidates = candidates.to_dict('list')
 
+        newscore_cand = [score + 0.4 if "Has off target" in candidates['notes'][idx] else score for idx, score in
+                         enumerate(candidates['score'])]
+
+        newscore_back = [score + 0.4 if "Has off target" in backup['notes'][idx] else score for idx, score in
+                         enumerate(backup['score'])]
+
+        candidates['score'] = newscore_cand
+        backup['score'] = newscore_back
+
         candidates, backup, dropped_gRNA = self.correct_gRNA_dictionary(candidates=candidates, backup=backup,
                                                                         dropped_gRNA=dropped_gRNA)
-
 
         return candidates, backup, dropped_gRNA
 

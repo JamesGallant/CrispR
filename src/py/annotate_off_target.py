@@ -53,13 +53,12 @@ class Annotater:
 
 		for _, row in self.offtarget.iterrows():
 			start = row['chromStart']
-			stop = row['chromEnd']
 			chromosome = row['chrom']
 
 			get_genelist = self._database_query(position=start, query=query_db, chromosome=chromosome)
 			
 			if bool(get_genelist['attribute']):
-				anno.append(str(list(get_genelist['attribute'].values())).split(";")[0].split("=")[1])
+				anno.append(str(list(get_genelist['attribute'].values())).split(";")[0].split("=")[1].lower())
 			else:
 				anno.append("NA")
 				

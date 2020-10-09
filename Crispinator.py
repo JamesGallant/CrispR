@@ -1,18 +1,22 @@
-#pyinstaller --onefile --path ./venv/site-packages -w file.py
-#bat file to point to exe
-#shortcut as launcher -> set admin privalages here
+# pyinstaller --onefile --path ./venv/site-packages -w file.py
+# bat file to point to exe
+# shortcut as launcher -> set admin privalages here
+
+# Primer must be without pam and NN-PAM and reverse
+# handle gene names
 import sys, os
 import qdarkstyle
 import shutil
 import sqlite3
+import webbrowser
 
 from src.py.workers import FindgRNA_worker, BSgenome_worker, CrisprInterference_worker
 from src.py.dialogs import *
 from src.py.pandashandler import PandasModel
-from src.py.misc_functions import CreateDatabaseMethod
-from src.py.database_tools import Database, SQL
+from src.py.database_tools import Database, SQL, CreateDatabaseMethod
 
-#from PyQt5 import QtWidgets, QtGui, QtCore
+
+# from PyQt5 import QtWidgets, QtGui, QtCore
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -159,8 +163,28 @@ class MainWindow(QtWidgets.QMainWindow):
         grnamenu.addAction(predictGrnaDialog)
         grnamenu.addAction(displayGrnaDialog)
 
-        # Help
-        helpmenu = menu.addMenu('Help')
+        # Navigate
+        navMenu = menu.addMenu('Navigation')
+        mycobrowser = QtWidgets.QAction("Mycobrowser", self)
+        mycobrowser.triggered.connect(lambda: self.navigate_functions(trigger="mycobrowser"))
+        chopchop = QtWidgets.QAction("ChopChop", self)
+        chopchop.triggered.connect(lambda: self.navigate_functions(trigger="chopchop"))
+        ncbi = QtWidgets.QAction("NCBI", self)
+        ncbi.triggered.connect(lambda: self.navigate_functions(trigger="ncbi"))
+        git = QtWidgets.QAction("Source code", self)
+        git.triggered.connect(lambda: self.navigate_functions(trigger="git"))
+
+        navMenu.addAction(mycobrowser)
+        navMenu.addAction(chopchop)
+        navMenu.addAction(ncbi)
+        navMenu.addAction(git)
+
+        # about
+        aboutMenu = menu.addMenu('About')
+        showLicenceDialog = QtWidgets.QAction("licence", self)
+        showLicenceDialog.triggered.connect(lambda: self.about_functions(trigger="license"))
+
+        aboutMenu.addAction(showLicenceDialog)
 
     def create_toolbar(self):
         toolbar = QtWidgets.QToolBar("Main")
@@ -181,8 +205,8 @@ class MainWindow(QtWidgets.QMainWindow):
         predictNewGrna.triggered.connect(lambda: self.grna_functions(trigger="search"))
 
         displayGrnaIcon = QtGui.QIcon(os.path.join(self.root, "gui", "Icons", "display.png"))
-        displayGrna = QtWidgets.QAction(displayGrnaIcon, "Display gRNA", self)
-        displayGrna.setToolTip("Query database and display guide RNA's")
+        displayGrna = QtWidgets.QAction(displayGrnaIcon, "CrisprI", self)
+        displayGrna.setToolTip("Query database and display guide RNA's for Crispr Interference")
         displayGrna.setShortcut("Ctrl+J")
         displayGrna.triggered.connect(lambda: self.grna_functions(trigger="display"))
 
@@ -221,7 +245,6 @@ class MainWindow(QtWidgets.QMainWindow):
         SQLQuery.setToolTip("Query database directly using SQL")
         SQLQuery.setShortcut("Ctrl+D")
         SQLQuery.triggered.connect(lambda: self.database_functions(trigger="sql"))
-
 
         toolbar.addAction(showGrnaStats)
         toolbar.addAction(predictNewGrna)
@@ -361,7 +384,6 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Opens and runs dialog to delete database
         """
-        print(self.availible_databases)
         delete_db_dialog = DeleteDatabaseDialog(database_list=self.availible_databases,
                                                 bsgenome_list=self.availible_bsgenome)
 
@@ -424,6 +446,21 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if trigger == "sql":
             self.sql_dialog_function()
+
+    def navigate_functions(self, trigger):
+        if trigger == "mycobrowser":
+            webbrowser.open_new_tab("https://mycobrowser.epfl.ch/")
+
+        if trigger == "chopchop":
+            webbrowser.open_new_tab("https://chopchop.cbu.uib.no/")
+
+        if trigger == "ncbi":
+            webbrowser.open_new_tab("https://www.ncbi.nlm.nih.gov/")
+
+        if trigger == "git":
+            webbrowser.open_new_tab("https://github.com/JamesGallant/CrispR")
+
+    ############ RUNNER FUNCTIONS #########
 
     def grna_stats_runner(self):
         """Display stats
@@ -612,11 +649,51 @@ class MainWindow(QtWidgets.QMainWindow):
             max_grna = user_options['max_grna_count']
             max_primer_len = user_options['max_primer_len']
             user_cas9 = user_options['cas9']
+            user_pam_tolerance = user_options['pam_tolerance']
+            user_fiveprime = user_options['nucleotides_5']
+            user_threeprime = user_options['nucleotides_3']
 
             gene_mask_dictionary = {
-                'genes': [items.replace("_", "") if "_" in items else items for items in user_options['genes']],
-                'masks': [items.replace("_", "") if "_" in items else items for items in user_options['masks']]
+                'genes': [items.replace("_", "").lower() if "_" in items else items.lower() for items in
+                          user_options['genes']],
+                'masks': [items.replace("_", "").lower() if "_" in items else items.lower() for items in
+                          user_options['masks']]
             }
+
+            sqlrunner = SQL(database=database)
+            headers = sqlrunner.custom_sql("SELECT header FROM genes").to_dict('list')
+
+            gene_check = [True if gene in headers['header'] else False for gene in gene_mask_dictionary['genes']]
+            mask_check = [True if gene in headers['header'] else False for gene in gene_mask_dictionary['masks']]
+
+            for idx, val in enumerate(gene_check):
+                if not val:
+                    db = database.replace("_", " ")
+                    QtWidgets.QMessageBox.about(self, "Error",
+                                                f"{gene_mask_dictionary['genes'][idx]} was not found in {db}")
+
+                    self.main_progressbar_value = 0
+                    self.main_progressbar.setValue(self.main_progressbar_value)
+                    return None
+
+            for idx, val in enumerate(mask_check):
+                if not val:
+                    db = database.replace("_", " ")
+                    QtWidgets.QMessageBox.about(self, "Error",
+                                                f"{gene_mask_dictionary['masks'][idx]} was not found in {db}")
+
+                    self.main_progressbar_value = 0
+                    self.main_progressbar.setValue(self.main_progressbar_value)
+                    return None
+
+            if mismatch == "":
+                QtWidgets.QMessageBox.about(self, "Error",
+                                            "First search guide RNA's")
+
+                self.main_progressbar_value = 0
+                self.main_progressbar.setValue(self.main_progressbar_value)
+                return None
+
             # Strand is r for reverse
             worker = CrisprInterference_worker(database=database,
                                                mismatch=mismatch,
@@ -624,7 +701,10 @@ class MainWindow(QtWidgets.QMainWindow):
                                                max_grna=max_grna,
                                                genes_masks=gene_mask_dictionary,
                                                max_primer_size=max_primer_len,
-                                               cas9_organism=user_cas9)
+                                               cas9_organism=user_cas9,
+                                               pam_tolerance=user_pam_tolerance,
+                                               fiveprime_nucleotides=user_fiveprime,
+                                               threeprime_nucleotides=user_threeprime)
 
             self.threadingPool.start(worker)
 
@@ -681,6 +761,13 @@ class MainWindow(QtWidgets.QMainWindow):
         if trigger == "display":
             self.grna_display_runner()
 
+    def show_license_func(self):
+        showLicense().exec_()
+
+    def about_functions(self, trigger):
+        if trigger == "license":
+            self.show_license_func()
+
     # internal event modifiers here
     def closeEvent(self, event):
         user_response = QtWidgets.QMessageBox.question(self, 'Message', "Are you sure you would like to quit",
@@ -700,6 +787,7 @@ class MainWindow(QtWidgets.QMainWindow):
             event.accept()
         else:
             event.ignore()
+
 
 def main():
     app = QtWidgets.QApplication(sys.argv)

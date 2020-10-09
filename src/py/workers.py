@@ -8,12 +8,8 @@ from src.py.predict_gRNA import Get_gRNA
 from src.py.annotate_off_target import Annotater
 from src.py.cripr import RefineCripri
 from src.py.database_tools import SQL
-from src.py.misc_functions import *
-
 from src.py import utilities
 
-
-# from src.py.misc_functions import possible_pams_ranked
 
 class BSgenome_worker(QtCore.QRunnable):
     def __init__(self):
@@ -55,7 +51,10 @@ class FindgRNA_worker(QtCore.QRunnable):
 
 
 class CrisprInterference_worker(QtCore.QRunnable):
-    def __init__(self, database, mismatch, strand, max_grna, genes_masks, max_primer_size, cas9_organism):
+    def __init__(self, database, mismatch, strand,
+                 max_grna, genes_masks, max_primer_size,
+                 cas9_organism, pam_tolerance,
+                 fiveprime_nucleotides, threeprime_nucleotides):
         super().__init__()
         self.root = os.path.dirname(os.path.abspath(__name__))
         self.tempdir = os.path.join(self.root, "temp")
@@ -66,7 +65,10 @@ class CrisprInterference_worker(QtCore.QRunnable):
         self.gene_mask_dict = genes_masks
         self.max_primer_size = max_primer_size
         self.cas9_organism = cas9_organism
-        self.utils = utilities.CrispinatorUitls(cas9=self.cas9_organism)
+        self.pam_tolerance = pam_tolerance
+        self.fiveprime = fiveprime_nucleotides
+        self.threeprime = threeprime_nucleotides
+        self.utils = utilities.CrispinatorUitls()
 
     def get_targeted_data(self, dataframe, gene_mask_dict):
         """:parameter gene_mask_dict dictionary with genes on header 'genes'
@@ -104,11 +106,9 @@ class CrisprInterference_worker(QtCore.QRunnable):
                 get_gene_idx = [idx for idx, value in enumerate(candidates['names']) if genes in value]
                 target_rows = candidates.loc[get_gene_idx, :]
                 target_rows.reset_index(inplace=True, drop=True)
-                tuple_rank_list = [(idx, int(float(item))) for idx, item in enumerate(target_rows['score'])]
+                tuple_rank_list = [(idx, item) for idx, item in enumerate(target_rows['score'])]
                 tuple_rank_list.sort(key=lambda x: x[1])
                 target_idx_to_pop = [t[0] for t in tuple_rank_list[-(len(get_gene_idx) - self.max_grna):]]
-                target_rows.drop(columns=["score"], inplace=True)
-                target_rows.reset_index(inplace=True, drop=True)
                 move_to_backup = target_rows.loc[target_idx_to_pop, :]
 
                 primers = [target_rows['names'][idx] for idx in target_idx_to_pop]
@@ -232,10 +232,37 @@ class CrisprInterference_worker(QtCore.QRunnable):
                 offtarget_pam = offtarget_grna[-len(grna_pam):]
 
                 if grna_pam != offtarget_pam:
-                    availible_pams = possible_pams_ranked(cas9=self.cas9_organism).keys()
-                    print(f"oftarget: {offtarget_pam}, avail: {availible_pams}")
-                    if offtarget_pam not in availible_pams:
-                        grna_dataframe['notes'][index_location] = "PASS: offtarget pam is invalid"
+                    availible_pams = self.utils.possible_pams_ranked(cas9=self.cas9_organism)
+                    if offtarget_pam not in availible_pams.keys():
+                        grna_dataframe['notes'][index_location] = "PASS"
+                        grna_dataframe['score'][index_location] = grna_dataframe['score'][index_location] - 0.4
+
+                    else:
+                        #Ineffecient! we actually need a better way
+                        if self.pam_tolerance == "tolerate none" or self.pam_tolerance == "tolerate all":
+                            if self.pam_tolerance == "tolerate none":
+                                #accepts this off target pam
+                                continue
+                            else:
+                                #accepts this offtarget pams as beneficial
+                                grna_dataframe['notes'][index_location] = "PASS"
+                                grna_dataframe['score'][index_location] = grna_dataframe['score'][index_location] - 0.4
+                        else:
+                            pam_scales = {k: v[1] for (k, v) in availible_pams.items()}
+
+                            if self.pam_tolerance == "high":
+                                if pam_scales.get(offtarget_pam) == "high":
+                                    # accepts the off target pam if tolerance high
+                                    grna_dataframe['notes'][index_location] = "PASS"
+                                    grna_dataframe['score'][index_location] = grna_dataframe['score'][
+                                                                                  index_location] - 0.4
+                            else:
+                                if pam_scales.get(offtarget_pam) == "low":
+                                    # accepts the off target pam if tolerance low
+                                    grna_dataframe['notes'][index_location] = "PASS"
+                                    grna_dataframe['score'][index_location] = grna_dataframe['score'][
+                                                                                  index_location] - 0.4
+
 
             return grna_dataframe.to_dict('list')
 
@@ -304,7 +331,7 @@ class CrisprInterference_worker(QtCore.QRunnable):
         candidates, backup = map(pd.DataFrame, [candidates, backup])
         candidates_genes_count, backup_genes_count = map(Counter, [candidates['genes'],
                                                                    backup['genes']])
-        backup_drop_idx = []
+
         for genes, counts in candidates_genes_count.items():
             if counts < max_grna:
                 genes_in_backup = backup_genes_count.get(genes, 0)
@@ -379,9 +406,10 @@ class CrisprInterference_worker(QtCore.QRunnable):
                         target_base_location = primer_wo_pam_stop + counter
                         target_base = sequence_swapped[target_base_location]
                         if target_base == "a" or target_base == "g":
-                            grna_out = sequence_swapped[loc_in_gene:target_base_location+1]
+                            grna_out = sequence_swapped[loc_in_gene:target_base_location + 1]
                             grna_out = grna_out[::-1]
                             dataframe['gRNA'][idx] = grna_out.upper()
+                            dataframe['score'][idx] = dataframe['score'][idx] - 0.5
 
                             if "position 20 is" in dataframe['notes'][idx]:
                                 dataframe['notes'][idx] = "PASS"
@@ -395,15 +423,19 @@ class CrisprInterference_worker(QtCore.QRunnable):
                         grna_out = sequence_swapped[loc_in_gene:len(gene_sequence)]
                         grna_out = grna_out[::-1]
                         dataframe['gRNA'][idx] = grna_out.upper()
+                        dataframe['score'][idx] = dataframe['score'][idx] - 0.5
+                        if "position 20 is" in dataframe['notes'][idx]:
+                            dataframe['notes'][idx] = "PASS"
                     else:
 
                         while counter < len(gene_sequence):
                             target_base_location = primer_wo_pam_stop + counter
                             target_base = sequence_swapped[target_base_location]
                             if target_base == "a" or target_base == "g":
-                                grna_out = sequence_swapped[loc_in_gene:target_base_location+1]
+                                grna_out = sequence_swapped[loc_in_gene:target_base_location + 1]
                                 grna_out = grna_out[::-1]
                                 dataframe['gRNA'][idx] = grna_out.upper()
+                                dataframe['score'][idx] = dataframe['score'][idx] - 0.5
 
                                 if "position 20 is" in dataframe['notes'][idx]:
                                     dataframe['notes'][idx] = "PASS"
@@ -447,6 +479,34 @@ class CrisprInterference_worker(QtCore.QRunnable):
         dataframe.to_dict()
         return dataframe
 
+    def design_primers(self, dataframe, cas9, fiveprime="", threeprime=""):
+        """
+        This makes primers for crispr i, essentially it reverse compliments, removes NN-PAM and adds user defined NNN bases
+        :param dataframe: takes a pandas dataframe or dictionary
+        :param cas9 the organisms from whence the cas9 came
+        :param fiveprime 5' nucleotides to add NNN-revcompgRNA
+        :param threeprime 3' nucleotides to add revcompgRNA
+        :return: dictionary
+        """
+        if not isinstance(dataframe, pd.DataFrame):
+            dataframe = pd.DataFrame(dataframe)
+
+        sequence_list = dataframe['gRNA']
+        pam_list = dataframe['PAM']
+        depammed_sequences = []
+
+        for idx, sequence in enumerate(sequence_list):
+            pam_bases = pam_list[idx]
+            pam_wildcards = self.utils.possible_pams_ranked(cas9=cas9).get(pam_bases)[3]
+            depammed_sequences.append(sequence[:-int(len(pam_bases) + pam_wildcards)])
+
+        revcomp_list = [self.utils.reverse_compliment(sequence=seq).upper() for seq in depammed_sequences]
+
+        annotated_list = [fiveprime.lower() + primer + threeprime.lower() for primer in revcomp_list]
+        dataframe['primer'] = annotated_list
+
+        return dataframe.to_dict('list')
+
     @QtCore.pyqtSlot()
     def run(self):
         sqlrunner = SQL(database=os.path.join(self.root, "databases", self.database))
@@ -468,7 +528,6 @@ class CrisprInterference_worker(QtCore.QRunnable):
         candidates, backup, dropped = map(self.utils.annotate_dataframe,
                                           [candidates, backup, dropped])
 
-        candidates, backup = self.scan_maxmismatches(candidates=candidates, backup=backup)
 
         offtargets = sqlrunner.get_offtargets_by_mismatch(mismatch=self.mismatch)
         offtargets.dropna(subset=['annotation'], inplace=True)
@@ -522,8 +581,9 @@ class CrisprInterference_worker(QtCore.QRunnable):
             backup_offtargets = dict.fromkeys(offtargets, [])
             backup_offtargets = pd.DataFrame(backup_offtargets)
 
-        ## add ranking to pam, move between dataframes if ranking is fucked
 
+        ## add ranking to pam, move between dataframes if ranking is fucked
+        candidates, backup = self.scan_maxmismatches(candidates=candidates, backup=backup)
         candidates, backup = self.force_max_grna_in_candidates(candidates=candidates, backup=backup,
                                                                max_grna=self.max_grna)
 
@@ -535,13 +595,20 @@ class CrisprInterference_worker(QtCore.QRunnable):
 
         candidates, backup, dropped = map(self.calculate_gc_content, [candidates, backup, dropped])
 
+        candidates = self.design_primers(dataframe=candidates, cas9=self.cas9_organism,
+                                         fiveprime=self.fiveprime, threeprime=self.threeprime)
+
+        backup = self.design_primers(dataframe=backup, cas9=self.cas9_organism,
+                                     fiveprime=self.fiveprime, threeprime=self.threeprime)
+
         candidates, backup, dropped = map(pd.DataFrame,
                                           [candidates, backup, dropped])
 
         offtarget_empty = [candidates_offtargets.empty, backup_offtargets.empty]
 
         final_offtargets = pd.DataFrame()
-        if not offtarget_empty[0] and not offtarget_empty[1]:
+
+        if not any(final_offtargets):
             final_offtargets = candidates_offtargets
             final_offtargets['from'] = "candidates"
             backup_offtargets['from'] = "backup"

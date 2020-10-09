@@ -68,7 +68,7 @@ class CrisprFuncHelpers:
     def has_offtarget_result(self):
         return True
 
-runner = CrisprFuncHelpers(database="Mycobacterium_tuberculosis_H37Rv", strand="r", mismatch=4,
+runner = CrisprFuncHelpers(database="", strand="r", mismatch=4,
                            cas9="Streptococcus thermophilus")
 class CrisprFunction(unittest.TestCase):
     """

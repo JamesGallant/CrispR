@@ -10,7 +10,7 @@ from src.py.database_tools import SQL
 from src.py.pandashandler import PandasModel
 from src.py.workers import CustomSQL_worker
 from src.py.API_calls import TaxonomyAPI
-from src.py.misc_functions import possible_pams_ranked
+from src.py import utilities
 
 
 class ImportGenes(QtWidgets.QDialog):
@@ -929,7 +929,8 @@ class SearchGrnaDialog(QtWidgets.QDialog):
         super(SearchGrnaDialog, self).__init__()
         self.root = os.path.dirname(os.path.abspath(__name__))
         self.availible_cas9_orgs = cas9_list
-        self.pams_by_org_dict = possible_pams_ranked(cas9=self.availible_cas9_orgs[0])
+        self.utils = utilities.CrispinatorUitls()
+        self.pams_by_org_dict = self.utils.possible_pams_ranked(cas9=self.availible_cas9_orgs[0])
         self.pams_by_org = list(self.pams_by_org_dict.keys())
         self.availible_databases = database_list
 
@@ -975,7 +976,7 @@ class SearchGrnaDialog(QtWidgets.QDialog):
         self.cores = QtWidgets.QSpinBox()
         self.cores.setMinimum(1)
         self.cores.setMaximum(multiprocessing.cpu_count())
-        self.cores.setValue(int(multiprocessing.cpu_count()/2))
+        self.cores.setValue(int(multiprocessing.cpu_count() / 2))
         self.setToolTip(f"Number of cores to use for the calculations. Max is {multiprocessing.cpu_count()}")
 
         self.circ_chromosome_label = QtWidgets.QLabel("Circular")
@@ -993,7 +994,8 @@ class SearchGrnaDialog(QtWidgets.QDialog):
 
         self.lookup_tax_id_label = QtWidgets.QLabel("Lookup taxonomy ID")
         self.lookup_btn = QtWidgets.QPushButton("Lookup")
-        self.lookup_btn.setToolTip("Find id corresponding to organism, requires internet connection. Its not always possible")
+        self.lookup_btn.setToolTip(
+            "Find id corresponding to organism, requires internet connection. Its not always possible")
         self.lookup_btn.clicked.connect(self.lookup_tax_id_function)
 
         grid = QtWidgets.QGridLayout()
@@ -1025,8 +1027,8 @@ class SearchGrnaDialog(QtWidgets.QDialog):
         self.taxononmy_id_input.setText(tax_id)
 
     def update_pams(self):
-        print("change")
-        self.pams_by_org_dict = possible_pams_ranked(cas9=self.cas9_origin.currentText())
+
+        self.pams_by_org_dict = self.utils.possible_pams_ranked(cas9=self.cas9_origin.currentText())
         self.pams_by_org = list(self.pams_by_org_dict.keys())
         self.PAM_input.clear()
         self.PAM_input.addItems(self.pams_by_org)
@@ -1049,6 +1051,12 @@ class DisplayGuideRNA(QtWidgets.QDialog):
         self.setMinimumSize(630, 50)
         self.availible_databases = database_list
         self.availible_cas9 = cas9_list
+        self.utils = utilities.CrispinatorUitls()
+        pam_dict = self.utils.possible_pams_ranked(cas9=self.availible_cas9[0])
+        pam_dict_processed = {k: v[1] for (k, v) in pam_dict.items()}
+        self.pam_list = list(set(list(pam_dict_processed.values()))) + ["tolerate all", "tolerate none"]
+        self.pam_list.sort()
+
         sqlrunner = SQL(database=str(self.availible_databases[0]).replace(" ", "_"))
         self.processeed_mismatches_value = sqlrunner.list_mismatches_processing()
 
@@ -1125,13 +1133,20 @@ class DisplayGuideRNA(QtWidgets.QDialog):
         self.processed_maxPrimers_label = QtWidgets.QLabel("Max gRNA's")
         self.processed_maxPrimers = QtWidgets.QSpinBox()
         self.processed_maxPrimers.setMinimum(1)
-        self.processed_maxPrimers.setValue(3)
+        self.processed_maxPrimers.setValue(2)
         self.processed_maxPrimers.setToolTip("Maximum guide RNA's to add to database")
 
         self.cas9_label = QtWidgets.QLabel("Cas9 origin")
         self.cas9 = QtWidgets.QComboBox()
         self.cas9.addItems(self.availible_cas9)
         self.cas9.setToolTip("The organism from whence the cas9 came")
+        self.cas9.activated.connect(self.update_pams)
+
+        self.pam_tolerance_label = QtWidgets.QLabel("Tolerate PAM mismatches")
+        self.pam_tolerance = QtWidgets.QComboBox()
+        self.pam_tolerance.addItems(self.pam_list)
+        self.pam_tolerance.setToolTip("Tolerate mismatches in pams, i.e. very high is pams with rank 1-5 and none is no tolerance")
+        self.pam_tolerance.setCurrentIndex(1)
 
         grid = QtWidgets.QGridLayout()
         grid.addWidget(self.genes_fileimport, 0, 0)
@@ -1154,6 +1169,8 @@ class DisplayGuideRNA(QtWidgets.QDialog):
         grid.addWidget(self.processed_primerlen, 8, 1)
         grid.addWidget(self.cas9_label, 9, 0)
         grid.addWidget(self.cas9, 10, 0)
+        grid.addWidget(self.pam_tolerance_label, 9, 1)
+        grid.addWidget(self.pam_tolerance, 10, 1)
 
         groupBox.setLayout(grid)
         return groupBox
@@ -1192,6 +1209,17 @@ class DisplayGuideRNA(QtWidgets.QDialog):
         self.processeed_mismatches_value = sqlrunner.list_mismatches_processing()
         self.processed_maxMismatch.addItems(self.processeed_mismatches_value)
 
+    def update_pams(self):
+        self.pam_tolerance.clear()
+        self.pam_list.clear()
+        cas9_user = self.cas9.currentText()
+        pam_dict = self.utils.possible_pams_ranked(cas9=cas9_user)
+        pam_dict_processed = {k: v[1] for (k, v) in pam_dict.items()}
+        self.pam_list = list(set(list(pam_dict_processed.values()))) + ["tolerate all", "tolerate none"]
+        self.pam_list.sort()
+        self.pam_tolerance.addItems(self.pam_list)
+        self.pam_tolerance.setCurrentIndex(1)
+
     def out(self):
         return {
             'genes': [str(items) for items in self.genes_textimport.toPlainText().splitlines() if items != ""],
@@ -1202,5 +1230,44 @@ class DisplayGuideRNA(QtWidgets.QDialog):
             'organism': self.processed_organism.currentText(),
             'nucleotides_5': self.processed_addnucleotides_5.text(),
             'nucleotides_3': self.processed_addnucleotides_3.text(),
-            'cas9': self.cas9.currentText()
+            'cas9': self.cas9.currentText(),
+            'pam_tolerance': self.pam_tolerance.currentText()
+
         }
+
+
+class showLicense(QtWidgets.QDialog):
+    def __init__(self):
+        super(showLicense, self).__init__()
+        self.root = os.path.dirname(os.path.abspath(__name__))
+        self.setWindowTitle("License agreement")
+        self.setWindowIcon(QtGui.QIcon(os.path.join(self.root, "gui", "Icons", "icon.png")))
+        self.setMinimumSize(1080, 650)
+
+        exitbtn = QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
+        self.exit = QtWidgets.QDialogButtonBox(exitbtn)
+        self.exit.accepted.connect(self.accept)
+        self.exit.rejected.connect(self.reject)
+
+        self.initiateDialogUI()
+
+    def initiateDialogUI(self):
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.addWidget(self.controls())
+        self.layout.addWidget(self.exit)
+        self.setLayout(self.layout)
+
+    def controls(self):
+        groupBox = QtWidgets.QGroupBox("Search guide RNA's")
+
+        license_text = open(os.path.join(self.root, "gui", "text", "LICENSE.txt"), 'r', encoding="utf8").read()
+        display_license = QtWidgets.QPlainTextEdit()
+        display_license.setPlainText(license_text)
+        display_license.setReadOnly(True)
+
+
+
+        grid = QtWidgets.QGridLayout()
+        grid.addWidget(display_license)
+        groupBox.setLayout(grid)
+        return groupBox

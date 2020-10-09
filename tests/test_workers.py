@@ -7,17 +7,20 @@ from collections import Counter
 
 
 class CrispriHelpers:
-    def __init__(self, gc_content_string: str, cas9: str, max_grna: int):
+    def __init__(self, gc_content_string: str, cas9: str, max_grna: int, pam_tolerance: str):
         self.gc_content_string = gc_content_string.lower()
         self.cas9 = cas9
+        self.pam_tolerance = pam_tolerance
         self.max_grna = max_grna
 
     def scan_mismatch_test(self):
         CrisprI = CrisprInterference_worker(database=None, mismatch=None, strand=None, max_grna=self.max_grna,
-                                            genes_masks=None, max_primer_size=None, cas9_organism=None)
+                                            genes_masks=None, max_primer_size=None, cas9_organism=None,
+                                            pam_tolerance=None, threeprime_nucleotides=None,
+                                            fiveprime_nucleotides=None)
 
         candidates = {
-            'name': ["gene1_primer1", "gene1_primer2", "gene1_primer3", "gene2_primer1", "gene2_primer2"],
+            'names': ["gene1_primer1", "gene1_primer2", "gene1_primer3", "gene2_primer1", "gene2_primer2"],
             'gRNA': ["NNNN", "NNNN", "NNNN", "NNNN", "NNNN"],
             'PAM': ["AGAAG", "AGAAT", "AGAAT", "AGAAG", "AGAAC"],
             'rank': [1, 2, 2, 1, 5],
@@ -26,7 +29,7 @@ class CrispriHelpers:
         }
 
         backup = {
-            'name': ["gene1_primer5", "gene1_primer6", "gene2_primer3"],
+            'names': ["gene1_primer5", "gene1_primer6", "gene2_primer3"],
             'gRNA': ["NNNN", "NNNN", "NNNN"],
             'PAM': ["AGAAT", "AGAAG", "AGAAG"],
             'rank': [2, 1, 1],
@@ -42,7 +45,7 @@ class CrispriHelpers:
     def scan_mismatch_result(self):
         def _one():
             candidates = {
-                'name': ["gene1_primer1", "gene2_primer1"],
+                'names': ["gene1_primer1", "gene2_primer1"],
                 'gRNA': ["NNNN", "NNNN"],
                 'PAM': ["AGAAG", "AGAAG"],
                 'rank': [1, 1],
@@ -51,8 +54,8 @@ class CrispriHelpers:
             }
 
             backup = {
-                'name': ["gene1_primer5", "gene1_primer6", "gene1_primer2",
-                         "gene1_primer3", "gene2_primer3", "gene2_primer2"],
+                'names': ["gene1_primer5", "gene1_primer6", "gene1_primer2",
+                          "gene1_primer3", "gene2_primer3", "gene2_primer2"],
                 'gRNA': ["NNNN", "NNNN", "NNNN", "NNNN", "NNNN", "NNNN"],
                 'PAM': ["AGAAT", "AGAAG", "AGAAT", "AGAAT", "AGAAG", "AGAAC"],
                 'rank': [2, 1, 2, 2, 1, 5],
@@ -63,7 +66,7 @@ class CrispriHelpers:
 
         def _two():
             candidates = {
-                'name': ["gene1_primer1", "gene1_primer2", "gene2_primer1", "gene2_primer2"],
+                'names': ["gene1_primer1", "gene1_primer2", "gene2_primer1", "gene2_primer2"],
                 'gRNA': ["NNNN", "NNNN", "NNNN", "NNNN"],
                 'PAM': ["AGAAG", "AGAAT", "AGAAG", "AGAAC"],
                 'rank': [1, 2, 1, 5],
@@ -72,7 +75,7 @@ class CrispriHelpers:
             }
 
             backup = {
-                'name': ["gene1_primer5", "gene1_primer6", "gene1_primer3", "gene2_primer3"],
+                'names': ["gene1_primer5", "gene1_primer6", "gene1_primer3", "gene2_primer3"],
                 'gRNA': ["NNNN", "NNNN", "NNNN", "NNNN"],
                 'PAM': ["AGAAT", "AGAAG", "AGAAT", "AGAAG"],
                 'rank': [2, 1, 2, 1],
@@ -83,7 +86,7 @@ class CrispriHelpers:
 
         def _three():
             candidates = {
-                'name': ["gene1_primer1", "gene1_primer2", "gene1_primer3", "gene2_primer1", "gene2_primer2"],
+                'names': ["gene1_primer1", "gene1_primer2", "gene1_primer3", "gene2_primer1", "gene2_primer2"],
                 'gRNA': ["NNNN", "NNNN", "NNNN", "NNNN", "NNNN"],
                 'PAM': ["AGAAG", "AGAAT", "AGAAT", "AGAAG", "AGAAC"],
                 'rank': [1, 2, 2, 1, 5],
@@ -92,7 +95,7 @@ class CrispriHelpers:
             }
 
             backup = {
-                'name': ["gene1_primer5", "gene1_primer6", "gene2_primer3"],
+                'names': ["gene1_primer5", "gene1_primer6", "gene2_primer3"],
                 'gRNA': ["NNNN", "NNNN", "NNNN"],
                 'PAM': ["AGAAT", "AGAAG", "AGAAG"],
                 'rank': [2, 1, 1],
@@ -115,7 +118,8 @@ class CrispriHelpers:
     def gc_content_test(self):
         gc_content = self.gc_content_string
         CriprI = CrisprInterference_worker(database=None, mismatch=None, strand=None, max_grna=None, genes_masks=None,
-                                           max_primer_size=None, cas9_organism=None)
+                                           max_primer_size=None, cas9_organism=None, pam_tolerance=None,
+                                           threeprime_nucleotides=None, fiveprime_nucleotides=None)
         dataframe = pd.DataFrame({'gRNA': [gc_content]})
         out = CriprI.calculate_gc_content(dataframe)
         return str(out['gc_content'][0])
@@ -130,37 +134,83 @@ class CrispriHelpers:
 
     def negate_pam_mismatch_test(self):
         CriprII = CrisprInterference_worker(database=None, mismatch=None, strand=None, max_grna=None, genes_masks=None,
-                                            max_primer_size=None, cas9_organism=self.cas9)
+                                            max_primer_size=None, cas9_organism=self.cas9,
+                                            pam_tolerance=self.pam_tolerance, fiveprime_nucleotides=None,
+                                            threeprime_nucleotides=None)
 
         dataframe = {
-            'name': ['grna_primer1', 'grna_primer2', 'grna_primer3', 'grna_primer4'],
-            'gRNA': ["NNNNNNNAGAAG", "NNCNNNNAGAAG", "NNNNNNNAGAAT", "NNNNNNNNNNNN"],
-            'PAM': ['AGAAG', 'AGAAG', 'AGAAG', 'AGAAG'],
-            'notes': ["PASS", "Has off target", "Has off target", "Has off target"]
+            'names': ['grna_primer1', 'grna_primer2', 'grna_primer3', 'grna_primer4', 'grna_primer5'],
+            'gRNA': ["NNNNNNNAGAAG", "NNCNNNNAGAAG", "NNNNNNNAGAAT", "NNNNNNNAGAAG", "NNNNNNNAGAAG"],
+            'PAM': ['AGAAG', 'AGAAG', 'AGAAT', 'AGAAG', 'AGAAG'],
+            'score': [1, 1, 1, 1, 1],
+            'notes': ["PASS", "Has off target", "Has off target", "Has off target", "Has off target"]
         }
         offtarget = {
-            'name': ['grna_primer2', 'grna_primer3', 'grna_primer4'],
-            'OffTargetSequence': ['NNCNNNNAGAAG', 'NNCNNNNAGAAT', 'NNNNNNNNNNNN']
+            'name': ['grna_primer2', 'grna_primer3', 'grna_primer4', 'grna_primer5'],
+            'OffTargetSequence': ['NNCNNNNAGAAG', 'NNCNNNNAGAAT', "NNNNNNNAGAAT", "NNNNNNNGGGAA"]
         }
-
+        off_ids = list(set(dataframe['names']) & set(offtarget['name']))
         out = CriprII.negate_pam_mismatch(grna_dataframe=dataframe,
-                                          offtarget_dataframe=offtarget)
+                                          offtarget_dataframe=offtarget, target_ids=off_ids)
+
+
+        print(pd.DataFrame(out))
 
         return pd.DataFrame(out)
 
     def negate_pam_mismatch_result(self):
-        dataframe = {
-            'name': ['grna_primer1', 'grna_primer2', 'grna_primer3', 'grna_primer4'],
-            'gRNA': ["NNNNNNNAGAAG", "NNCNNNNAGAAG", "NNNNNNNAGAAT", "NNNNNNNNNNNN"],
-            'PAM': ['AGAAG', 'AGAAG', 'AGAAG', 'AGAAG'],
-            'notes': ["PASS", "Has off target", "Has off target", "PASS"]
+        def _all():
+            return {
+            'names': ['grna_primer1', 'grna_primer2', 'grna_primer3', 'grna_primer4', 'grna_primer5'],
+            'gRNA': ["NNNNNNNAGAAG", "NNCNNNNAGAAG", "NNNNNNNAGAAT", "NNNNNNNAGAAG", "NNNNNNNAGAAG"],
+            'PAM': ['AGAAG', 'AGAAG', 'AGAAT', 'AGAAG', 'AGAAG'],
+            'score': [1, 1, 1, 0, 0],
+            'notes': ["PASS", "Has off target", "Has off target", "PASS", "PASS"]
+            }
+
+        def _none():
+            return {
+                'names': ['grna_primer1', 'grna_primer2', 'grna_primer3', 'grna_primer4', 'grna_primer5'],
+                'gRNA': ["NNNNNNNAGAAG", "NNCNNNNAGAAG", "NNNNNNNAGAAT", "NNNNNNNAGAAG", "NNNNNNNAGAAG"],
+                'PAM': ['AGAAG', 'AGAAG', 'AGAAT', 'AGAAG', 'AGAAG'],
+                'score': [1, 1, 1, 1, 1],
+                'notes': ["PASS", "Has off target", "Has off target", "Has off target", "Has off target"]
+            }
+
+        def _high():
+            return {
+                'names': ['grna_primer1', 'grna_primer2', 'grna_primer3', 'grna_primer4', 'grna_primer5'],
+                'gRNA': ["NNNNNNNAGAAG", "NNCNNNNAGAAG", "NNNNNNNAGAAT", "NNNNNNNAGAAG", "NNNNNNNAGAAG"],
+                'PAM': ['AGAAG', 'AGAAG', 'AGAAT', 'AGAAG', 'AGAAG'],
+                'score': [1, 1, 1, 0, 1],
+                'notes': ["PASS", "Has off target", "Has off target", "PASS", "Has off target"]
+            }
+
+        def _low():
+            return {
+                'names': ['grna_primer1', 'grna_primer2', 'grna_primer3', 'grna_primer4', 'grna_primer5'],
+                'gRNA': ["NNNNNNNAGAAG", "NNCNNNNAGAAG", "NNNNNNNAGAAT", "NNNNNNNAGAAG", "NNNNNNNAGAAG"],
+                'PAM': ['AGAAG', 'AGAAG', 'AGAAT', 'AGAAG', 'AGAAG'],
+                'score': [1, 1, 1, 1, 0],
+                'notes': ["PASS", "Has off target", "Has off target", "Has off target", "PASS"]
+            }
+
+        switch = {
+            "tolerate all": _all(),
+            "tolerate none": _none(),
+            "high": _high(),
+            "low": _low()
         }
-        return pd.DataFrame(dataframe)
+
+        out = switch.get(self.pam_tolerance, None)
+        print(pd.DataFrame(out))
+        return pd.DataFrame(out)
 
     def calculate_primerlenght_test(self):
         CriprI = CrisprInterference_worker(database=None, mismatch=None, strand=None, max_grna=None, genes_masks=None,
-                                           max_primer_size=None, cas9_organism=None)
-
+                                           max_primer_size=None, cas9_organism=None, pam_tolerance=None,
+                                           fiveprime_nucleotides=None,
+                                           threeprime_nucleotides=None)
         out = CriprI.calculate_primer_len(dataframe={'gRNA': ["N", "NN", "NNN"]})
         return list(out['primer_length'])
 
@@ -169,7 +219,8 @@ class CrispriHelpers:
 
     def force_max_grna_test(self):
         CriprI = CrisprInterference_worker(database=None, mismatch=None, strand=None, max_grna=None, genes_masks=None,
-                                           max_primer_size=None, cas9_organism=None)
+                                           max_primer_size=None, cas9_organism=None, pam_tolerance=None, fiveprime_nucleotides=None,
+                                           threeprime_nucleotides=None)
 
         candidates = {
             'name': ["gene1_primer1", "gene1_primer2", "gene2_primer1"],
@@ -287,8 +338,31 @@ class CrispriHelpers:
 
         return pd.DataFrame(candidates), pd.DataFrame(backup)
 
+    def primer_design_test(self):
+        CriprI = CrisprInterference_worker(database=None, mismatch=None, strand=None, max_grna=None, genes_masks=None,
+                                           max_primer_size=None, cas9_organism=self.cas9, pam_tolerance=None,
+                                           fiveprime_nucleotides=None, threeprime_nucleotides=None)
 
-CrispriRunner = CrispriHelpers(gc_content_string="AGTC", cas9="Streptococcus thermophilus", max_grna=3)
+        dataframe = {
+            'gRNA': ["AAACCCGGAGAAG", "ATCGGAATTAAGAGAAG"],
+            'PAM': ["AGAAG", "AGAAG"]
+        }
+        five = "primerfive"
+        three = "primerthree"
+
+        out = CriprI.design_primers(dataframe=dataframe, cas9=self.cas9, fiveprime=five, threeprime=three)
+        return pd.DataFrame(out)
+
+    def primer_design_result(self):
+        return pd.DataFrame({
+            'gRNA': ["AAACCCGGAGAAG", "ATCGGAATTAAGAGAAG"],
+            'PAM': ["AGAAG", "AGAAG"],
+            'primer': ["primerfiveGGGTTTprimerthree", "primerfiveTAATTCCGATprimerthree"]
+        })
+
+
+CrispriRunner = CrispriHelpers(gc_content_string="AGTC", cas9="Streptococcus thermophilus", max_grna=3,
+                               pam_tolerance="tolerate all")
 
 
 class CrisprInterferenceWorkerTestCase(unittest.TestCase):
@@ -332,6 +406,13 @@ class CrisprInterferenceWorkerTestCase(unittest.TestCase):
         try:
             assert_frame_equal(CrispriRunner.force_max_grna_result()[1],
                                CrispriRunner.force_max_grna_test()[1])
+        except AssertionError as e:
+            raise self.failureException(e)
+
+    def test_primer_design(self):
+        try:
+            assert_frame_equal(CrispriRunner.primer_design_result(),
+                               CrispriRunner.primer_design_test())
         except AssertionError as e:
             raise self.failureException(e)
 
