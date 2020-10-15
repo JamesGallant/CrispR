@@ -11,7 +11,7 @@ class CrisprFuncHelpers:
     """
 
     def __init__(self, database: str, strand: str, mismatch: int, cas9: str):
-        self.root = os.path.dirname(os.path.abspath("../Crispinator.py"))
+        self.root = os.path.dirname(os.path.abspath("../main.py"))
         os.chdir(self.root)
         self.sql = SQL(database=database)
         self.strand = strand

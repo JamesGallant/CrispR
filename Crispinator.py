@@ -1,20 +1,14 @@
-# pyinstaller --onefile --path ./venv/site-packages -w file.py
-# bat file to point to exe
-# shortcut as launcher -> set admin privalages here
-
-# Primer must be without pam and NN-PAM and reverse
-# handle gene names
-import sys, os
+import sys
+import os
 import qdarkstyle
 import shutil
 import sqlite3
 import webbrowser
 
-from src.py.workers import FindgRNA_worker, BSgenome_worker, CrisprInterference_worker
+from src.py.workers import *
 from src.py.dialogs import *
 from src.py.pandashandler import PandasModel
 from src.py.database_tools import Database, SQL, CreateDatabaseMethod
-
 
 # from PyQt5 import QtWidgets, QtGui, QtCore
 
@@ -102,30 +96,6 @@ class MainWindow(QtWidgets.QMainWindow):
         actions for the menubar
         """
         menu = self.menuBar()
-        # File
-        filemenu = menu.addMenu('File')
-        importDatabaseAction = QtWidgets.QAction('Database', self)
-        importDatabaseAction.setShortcut("Ctrl+T")
-        importDatabaseAction.triggered.connect(self.import_database_function)
-
-        exportDatabasesAction = QtWidgets.QAction('Databases', self)
-        exportDatabasesAction.setShortcut("Ctrl+Y")
-        exportDatabasesAction.triggered.connect(lambda: self.exportfiles(trigger="database"))
-        exportGuideRNA = QtWidgets.QAction("Guide RNA's", self)
-        exportGuideRNA.setShortcut("Ctrl+U")
-        exportGuideRNA.triggered.connect(self.export_guide_rna)
-
-        exitAction = QtWidgets.QAction('Exit', self)
-        exitAction.setShortcut("esc")
-        exitAction.triggered.connect(self.fileclose)
-
-        import_group = filemenu.addMenu('Import')
-        import_group.addAction(importDatabaseAction)
-        export_group = filemenu.addMenu('Export')
-        export_group.addAction(exportDatabasesAction)
-        export_group.addAction(exportGuideRNA)
-        filemenu.addAction(exitAction)
-
         # Database
         databasemenu = menu.addMenu('Database')
 
@@ -137,12 +107,22 @@ class MainWindow(QtWidgets.QMainWindow):
         deleteDatabaseDialog.setShortcut("Ctrl+S")
         deleteDatabaseDialog.triggered.connect(lambda: self.database_functions(trigger="delete_db"))
 
+        importDatabaseAction = QtWidgets.QAction('Database', self)
+        importDatabaseAction.setShortcut("Ctrl+T")
+        importDatabaseAction.triggered.connect(self.import_database_function)
+
+        exportDatabasesAction = QtWidgets.QAction('Databases', self)
+        exportDatabasesAction.setShortcut("Ctrl+Y")
+        exportDatabasesAction.triggered.connect(lambda: self.exportfiles(trigger="database"))
+
         sqlDialog = QtWidgets.QAction("SQL interface", self)
         sqlDialog.setShortcut("Ctrl+D")
         sqlDialog.triggered.connect(lambda: self.database_functions(trigger="sql"))
 
         databasemenu.addAction(createDatabaseDialog)
         databasemenu.addAction(deleteDatabaseDialog)
+        databasemenu.addAction(importDatabaseAction)
+        databasemenu.addAction(exportDatabasesAction)
         databasemenu.addAction(sqlDialog)
 
         # Guide RNA
@@ -159,12 +139,17 @@ class MainWindow(QtWidgets.QMainWindow):
         displayGrnaDialog.setShortcut("Ctrl+J")
         displayGrnaDialog.triggered.connect(lambda: self.grna_functions(trigger="display"))
 
+        exportGuideRNA = QtWidgets.QAction("Guide RNA's", self)
+        exportGuideRNA.setShortcut("Ctrl+U")
+        exportGuideRNA.triggered.connect(self.export_guide_rna)
+
         grnamenu.addAction(showGrnaStatsDialog)
         grnamenu.addAction(predictGrnaDialog)
         grnamenu.addAction(displayGrnaDialog)
+        grnamenu.addAction(exportGuideRNA)
 
         # Navigate
-        navMenu = menu.addMenu('Navigation')
+        navMenu = menu.addMenu('External')
         mycobrowser = QtWidgets.QAction("Mycobrowser", self)
         mycobrowser.triggered.connect(lambda: self.navigate_functions(trigger="mycobrowser"))
         chopchop = QtWidgets.QAction("ChopChop", self)
@@ -210,6 +195,11 @@ class MainWindow(QtWidgets.QMainWindow):
         displayGrna.setShortcut("Ctrl+J")
         displayGrna.triggered.connect(lambda: self.grna_functions(trigger="display"))
 
+        cleargRNATablesIcon = QtGui.QIcon(os.path.join(self.root, "gui", "Icons", "clear.png"))
+        cleargRNATables = QtWidgets.QAction(cleargRNATablesIcon, "Clear tables", self)
+        cleargRNATables.setToolTip("Clear all the tables")
+        cleargRNATables.triggered.connect(lambda: self.grna_functions(trigger="clear"))
+
         exportGrnaIcon = QtGui.QIcon(os.path.join(self.root, "gui", "Icons", "Export_grna.png"))
         exportGrna = QtWidgets.QAction(exportGrnaIcon, "Export gRNA", self)
         exportGrna.setToolTip("Export guide RNA and related info")
@@ -250,6 +240,7 @@ class MainWindow(QtWidgets.QMainWindow):
         toolbar.addAction(predictNewGrna)
         toolbar.addAction(displayGrna)
         toolbar.addAction(exportGrna)
+        toolbar.addAction(cleargRNATables)
         toolbar.addAction(addDataBase)
         toolbar.addAction(removeDataBase)
         toolbar.addAction(databaseImport)
@@ -261,37 +252,64 @@ class MainWindow(QtWidgets.QMainWindow):
         self.close()
 
     def import_database_function(self):
-        filename = QtWidgets.QFileDialog.getOpenFileName(self, "Add database", ".", "Database files (*.db)")
-        file_to_copy = filename[0]
+        importer = ImportDatabase()
 
-        if filename[0] == '':
-            return None
+        if importer.exec_():
+            files = importer.out()
+            sanity = [files['database'], files['bsgenome']]
+            if all(sanity):
+                shutil.copy(files['database'], os.path.join(self.root, "databases"))
+                self.availible_databases.clear()
+                self.availible_databases = [str(os.path.splitext(items)[0]).replace("_", " ") for items in
+                                            os.listdir(os.path.join(self.root, "databases")) if items != "test.db"]
 
-        shutil.copy(file_to_copy, os.path.join(self.root, "databases"))
-        self.availible_databases.clear()
-        self.current_databases.clear()
-        self.search_databases.clear()
-        self.processed_organism.clear()
+                shutil.copy(files['bsgenome'], os.path.join(self.root, "src", "local_packages"))
 
-        self.availible_databases = [str(os.path.splitext(items)[0]).replace("_", " ") for items in
-                                    os.listdir(os.path.join(self.root, "databases")) if items != "test.db"]
 
-        self.current_databases.addItems(self.availible_databases)
-        self.search_databases.addItems(self.availible_databases)
-        self.processed_organism.addItems(self.availible_databases)
+                self.availible_bsgenome.clear()
+                self.availible_bsgenome = [items for items in
+                                           os.listdir(os.path.join(self.root, "src", "local_packages"))]
+
+
+                worker = Install_New_R_Package(package_name=os.path.basename(files['bsgenome']))
+                self.threadingPool.start(worker)
+
+                while self.threadingPool.activeThreadCount() == 1:
+                    QtWidgets.QApplication.processEvents()
+                    self.statusBar().showMessage("Creating BSgenome R package ...")
+                    QtWidgets.QApplication.processEvents()
+                    if self.main_progressbar_value < 99:
+                        self.main_progressbar_value += 1
+                        self.main_progressbar.setValue(self.main_progressbar_value)
+                        time.sleep(0.5)
+
+                if self.threadingPool.waitForDone():
+                    while self.main_progressbar_value < 100:
+                        self.main_progressbar_value += 1
+                        self.main_progressbar.setValue(self.main_progressbar_value)
+
+                    QtWidgets.QMessageBox.about(self, "Info", "Files copied and installed successfully")
+                    self.main_progressbar_value = 0
+                    self.main_progressbar.setValue(self.main_progressbar_value)
+
+            else:
+                if not sanity[0]:
+                    QtWidgets.QMessageBox.about(self, "Error", "database file missing")
+                    return None
+
+                if not sanity[1]:
+                    QtWidgets.QMessageBox.about(self, "Error", "bsgenome file missing")
+                    return None
 
     def exportfiles(self, trigger):
         if trigger == "database":
             exporter = ExportDatabase(self)
             if exporter.exec_():
-                # self.statusBar.showMessage("Copying files...")
                 destination = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
-                files_to_copy = exporter.files()
-                if files_to_copy == "all":
-                    for files in files_to_copy:
-                        shutil.copy(os.path.join(self.root, "databases", f"{files}.db"), destination)
-                else:
-                    shutil.copy(os.path.join(self.root, "databases", f"{files_to_copy}.db"), destination)
+                database, bsgenome = exporter.files()
+                shutil.copy(os.path.join(self.root, "databases", f"{database}.db"), destination)
+                shutil.copy(os.path.join(self.root, "src", "local_packages", f"{bsgenome}"), destination)
+                QtWidgets.QMessageBox.about(self, "Info", "Files copied successfully")
 
     def export_guide_rna(self):
         if self.database_querried:
@@ -401,12 +419,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 bsgenome = bsgenome.replace(".tar", "")
 
             os.remove(os.path.join(self.root, "databases", f"{database}.db"))
-            os.remove(os.path.join(self.root, "R", "local_packages", f"{bsgenome}.tar.gz"))
+            os.remove(os.path.join(self.root, "src", "local_packages", f"{bsgenome}.tar.gz"))
 
             self.availible_databases = [str(os.path.splitext(items)[0]).replace("_", " ") for items in
                                         os.listdir(os.path.join(self.root, "databases")) if items != "test.db"]
             self.availible_bsgenome = [str(os.path.splitext(items)[0]) for items in
-                                       os.listdir(os.path.join(self.root, "R", "local_packages"))]
+                                       os.listdir(os.path.join(self.root, "src", "local_packages"))]
 
             while self.main_progressbar_value < 100:
                 self.main_progressbar_value += 1
@@ -494,6 +512,11 @@ class MainWindow(QtWidgets.QMainWindow):
             if pam in searched_pams:
                 QtWidgets.QMessageBox.about(self, "Error",
                                             f"PAM {pam} has already been searched, choose a different pam")
+                return None
+
+            if tax_id == "":
+                QtWidgets.QMessageBox.about(self, "Error",
+                                            f"Taxonomy id required")
                 return None
 
             self.statusBar().showMessage("Creating guide RNA database...")
@@ -749,17 +772,32 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.main_progressbar.setValue(self.main_progressbar_value)
                 self.statusBar().showMessage("Ready")
 
+                hits = [genes for genes in self.candidate_gRNA_df['genes']]
+                missed = list(set(gene_mask_dictionary['genes']) - set(hits))
+
+                EOSpopup(missed_genes=missed).exec_()
+
             shutil.rmtree(tempdir)
 
+    def grna_clear_runner(self):
+        def _worker(dataframe=pd.DataFrame()):
+            if dataframe is not None:
+                empty = pd.DataFrame(dict.fromkeys(dataframe, []))
+                return PandasModel(empty)
+
+        self.display_candidates.setModel(_worker(self.candidate_gRNA_df))
+        self.display_backup.setModel(_worker(self.backup_gRNA_df))
+        self.display_dropped.setModel(_worker(self.dropped_gRNA_df))
+        self.display_offtargets.setModel(_worker(self.offtarget_df))
+
     def grna_functions(self, trigger):
-        if trigger == "stats":
-            self.grna_stats_runner()
-
-        if trigger == "search":
-            self.grna_search_runner()
-
-        if trigger == "display":
-            self.grna_display_runner()
+        switch = {
+            'stats': self.grna_stats_runner,
+            'search': self.grna_search_runner,
+            'display': self.grna_display_runner,
+            'clear': self.grna_clear_runner
+        }
+        switch.get(trigger, None)()
 
     def show_license_func(self):
         showLicense().exec_()
@@ -792,6 +830,7 @@ class MainWindow(QtWidgets.QMainWindow):
 def main():
     app = QtWidgets.QApplication(sys.argv)
     app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+
     gui = MainWindow()
     app.exec_()
     sys.exit()

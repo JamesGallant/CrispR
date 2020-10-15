@@ -2,6 +2,8 @@ if(!require(optparse)){
   install.packages("optparse")
 }
 
+source("../R/install_bioconductor.R")
+
 option_list = list(
   make_option("--method", type = "character", default = NULL, action = "store",
               help = "Function to run, use 'list_options' to see methods"),

@@ -8,13 +8,14 @@ class RefineCripri:
     Dataframe is a pandas dataframe
     """
 
-    def __init__(self, grna_dataframe, strand, fasta_dataframe, cas9):
+    def __init__(self, grna_dataframe, strand, fasta_dataframe, cas9, offtarget_ids):
         self.grna_dataframe = grna_dataframe
         self.strand = strand
         self.fasta = fasta_dataframe
         self.utils = utilities.CrispinatorUitls()
         self.cas9 = cas9
         self.ranked_data = self.initial_scoring()
+        self.offtarget_list = offtarget_ids
 
     def initial_scoring(self):
         rank_df = self.utils.rank_pams(dictionary=self.grna_dataframe.to_dict('list'), cas9=self.cas9)
@@ -148,34 +149,34 @@ class RefineCripri:
         follow up. Executes a correction before returning the dataframe
         """
 
-        ranked_df = pd.DataFrame(self.ranked_data)
-        # candidates = pd.DataFrame(candidates)
-        for identifiers in candidates["names"]:
-            cross_reference = ranked_df.loc[ranked_df['names'] == identifiers].to_dict()
-            off_target_presence = str(list(cross_reference['top5OfftargetTotalScore'].values())[0])
-            if off_target_presence != "nan":
-                backup['names'].append(identifiers)
-                backup['gRNA'].append(str(list(cross_reference['gRNA'].values())[0]))
-                backup['PAM'].append(str(list(cross_reference['PAM'].values())[0]))
-                backup['rank'].append(str(list(cross_reference['rank'].values())[0]))
-                # backup['genes'].append(str(list(cross_reference['genes'].values())[0]))
-                backup['score'].append(int(list(cross_reference['score'].values())[0]))
-                backup['notes'].append("Has off target")
+        #ranked_df = pd.DataFrame(self.ranked_data)
+        #candidates = pd.DataFrame(candidates)
+        for idx, identifiers in enumerate(candidates['names']):
+            if identifiers in self.offtarget_list.name.values:
+                target_row = self.offtarget_list.loc[self.offtarget_list['name'] == identifiers]
+                target_row.reset_index(inplace=True, drop=True)
+                if "-" in target_row.strand.values:
+                    candidates['notes'][idx] = "Has off target"
+                else:
+                    candidates['notes'][idx] = "PASS"
 
-                candidates = pd.DataFrame(candidates)
-                candidates = candidates[candidates['names'] != identifiers]
-                candidates.reset_index(drop=True, inplace=True)
-                candidates = candidates.to_dict('list')
+        idx_to_move = [idx for idx, val in enumerate(candidates['notes']) if "Has off target" in val]
+        candidates, backup = map(pd.DataFrame, [candidates, backup])
+        
+        to_backup = candidates.iloc[idx_to_move, :]
+        backup = backup.append(to_backup, ignore_index=True)
+        backup.reset_index(inplace=True, drop=True)
+        candidates.drop(idx_to_move, inplace=True)
+        candidates.reset_index(inplace=True, drop=True)
 
-        newscore_cand = [score + 0.4 if "Has off target" in candidates['notes'][idx] else score for idx, score in
-                         enumerate(candidates['score'])]
 
         newscore_back = [score + 0.4 if "Has off target" in backup['notes'][idx] else score for idx, score in
                          enumerate(backup['score'])]
 
-        candidates['score'] = newscore_cand
         backup['score'] = newscore_back
 
+        candidates = candidates.to_dict('list')
+        backup = backup.to_dict('list')
         candidates, backup, dropped_gRNA = self.correct_gRNA_dictionary(candidates=candidates, backup=backup,
                                                                         dropped_gRNA=dropped_gRNA)
 

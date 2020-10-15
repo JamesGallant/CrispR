@@ -8,4 +8,4 @@ __pycache__
 desktop.ini
 inno.iss
 Crispinator.exe
-databases/
+databases/*

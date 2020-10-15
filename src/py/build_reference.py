@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+from subprocess import CREATE_NO_WINDOW
 
 
 class BSgenome:
@@ -58,7 +59,7 @@ class BSgenome:
                          self.genome_build_funcs,
                          '--method', 'Remove',
                          '--package', package],
-                        shell=True)
+                        creationflags=CREATE_NO_WINDOW)
 
         shutil.rmtree(os.path.join(self.root, "temp"), ignore_errors=True)
 
@@ -73,7 +74,7 @@ class BSgenome:
                          self.genome_build_funcs,
                          '--method', 'Forge',
                          '--path', seedfile,
-                         '--out_dir', self.tempdir], shell=False)
+                         '--out_dir', self.tempdir], creationflags=CREATE_NO_WINDOW)
 
         subprocess.call(['Rscript',
                          '--vanilla',
@@ -81,7 +82,7 @@ class BSgenome:
                          '--method', 'Build',
                          '--path',
                          os.path.join(self.root, "temp", self._dcf_metadata(seedfile=seedfile, extract='Package')),
-                         '--out_dir', self.package_dir], shell=False)
+                         '--out_dir', self.package_dir], creationflags=CREATE_NO_WINDOW)
 
         subprocess.call(['Rscript',
                          '--vanilla',
@@ -89,6 +90,6 @@ class BSgenome:
                          '--method', 'Install',
                          '--path', os.path.join(self.package_dir,
                                                 f"{self._dcf_metadata(seedfile=seedfile, extract='Package')}_{self._dcf_metadata(seedfile=seedfile, extract='Version')}.tar.gz")],
-                        shell=False)
+                        creationflags=CREATE_NO_WINDOW)
 
         shutil.rmtree(os.path.join(self.root, "temp"), ignore_errors=True)

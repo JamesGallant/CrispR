@@ -3,6 +3,7 @@ import pandas as pd
 import time
 import json
 import multiprocessing
+import shutil
 
 from PyQt5 import QtWidgets, QtGui, QtCore
 
@@ -127,7 +128,8 @@ class ExportDatabase(QtWidgets.QDialog):
 
         self.availible_databases = [str(os.path.splitext(items)[0]).replace("_", " ") for items in
                                     os.listdir(os.path.join(self.root, "databases")) if items != "test.db"]
-        self.availible_databases.append("all")
+
+        self.avilible_bsgenome = [items for items in os.listdir(os.path.join(self.root, "src", "local_packages"))]
         self.initiateDialogUI()
 
     def initiateDialogUI(self):
@@ -138,18 +140,107 @@ class ExportDatabase(QtWidgets.QDialog):
 
     def export_controls(self):
         groupbox = QtWidgets.QGroupBox("Export controls")
+        self.databases_label = QtWidgets.QLabel("SQL database")
         self.databases = QtWidgets.QComboBox()
         self.databases.setToolTip("Choose database to export")
         self.databases.addItems(self.availible_databases)
+        self.bsgenome_label = QtWidgets.QLabel("BSgenome object")
+        self.bsgenome = QtWidgets.QComboBox()
+        self.bsgenome.setToolTip("Choose appropriate BSgenome object")
+        self.bsgenome.addItems(self.avilible_bsgenome)
 
         grid = QtWidgets.QGridLayout()
-        grid.addWidget(self.databases, 0, 0)
+        grid.addWidget(self.databases_label, 0, 0)
+        grid.addWidget(self.bsgenome_label, 0, 1)
+        grid.addWidget(self.databases, 1, 0)
+        grid.addWidget(self.bsgenome, 1, 1)
         groupbox.setLayout(grid)
         return groupbox
 
     def files(self):
         # destination = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
-        return str(self.databases.currentText()).replace(" ", "_")
+        return str(self.databases.currentText()).replace(" ", "_"), self.bsgenome.currentText()
+
+
+class ImportDatabase(QtWidgets.QDialog):
+    def __init__(self, *args, **kwargs):
+        super(ImportDatabase, self).__init__(*args, **kwargs)
+        self.root = os.path.dirname(os.path.abspath(__name__))
+        self.setWindowTitle("Configure database")
+        self.setWindowIcon(QtGui.QIcon(os.path.join(self.root, "gui", "Icons", "icon.png")))
+        self.setMinimumSize(350, 150)
+
+        exitbtn = QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
+        self.exit = QtWidgets.QDialogButtonBox(exitbtn)
+        self.exit.accepted.connect(self.accept)
+        self.exit.rejected.connect(self.reject)
+
+        self.filepaths = {
+            'database': "",
+            'bsgenome': ""
+        }
+
+        self.files_to_copy = [False, False]
+
+        self.initiateDialogUI()
+
+    def initiateDialogUI(self):
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.addWidget(self.controls())
+        self.layout.addWidget(self.exit)
+        self.setLayout(self.layout)
+
+    def controls(self):
+        groupbox = QtWidgets.QGroupBox("Configure new database")
+
+        self.database_label = QtWidgets.QLabel("Database file")
+        self.database_file = QtWidgets.QPushButton('upload')
+        self.database_file.setToolTip("Upload SQL database file, ends in .db")
+        self.database_file.clicked.connect(lambda: self.import_function(trigger="database"))
+        self.bsgenome_label = QtWidgets.QLabel("BSgenome file")
+        self.bsgenome_file = QtWidgets.QPushButton("Upload")
+        self.bsgenome_file.setToolTip("This is a R package, ends with tar.gz that acompanies the database")
+        self.bsgenome_file.clicked.connect(lambda: self.import_function(trigger="bsgenome"))
+
+        grid = QtWidgets.QGridLayout()
+        grid.addWidget(self.database_label, 0, 0)
+        grid.addWidget(self.bsgenome_label, 0, 1)
+        grid.addWidget(self.database_file, 1, 0)
+        grid.addWidget(self.bsgenome_file, 1, 1)
+        groupbox.setLayout(grid)
+        return groupbox
+
+    def import_function(self, trigger):
+        filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Open File', '.')
+
+        if filename[0] == '':
+            return None
+        else:
+            self.filepaths.update({trigger: filename[0]})
+
+
+        self.files_to_copy = [bool(self.filepaths['database']), bool(self.filepaths['bsgenome'])]
+        if self.files_to_copy[0]:
+            database_extention = os.path.splitext(self.filepaths['database'])[1]
+            if database_extention == ".db":
+                self.database_file.setText("success")
+                self.database_file.setStyleSheet("background: #A5D6A7; color: black")
+
+            else:
+                self.database_file.setText("Failed")
+                self.database_file.setStyleSheet("background: #FFAB91; color: black")
+
+        if self.files_to_copy[1]:
+            bsgenome_extention = os.path.splitext(self.filepaths['bsgenome'])[1]
+            if bsgenome_extention == ".gz":
+                self.bsgenome_file.setText("success")
+                self.bsgenome_file.setStyleSheet("background: #A5D6A7; color: black")
+            else:
+                self.bsgenome_file.setText("Failed")
+                self.bsgenome_file.setStyleSheet("background: #FFAB91; color: black")
+
+    def out(self):
+        return self.filepaths
 
 
 class ExportGuideRNA(QtWidgets.QDialog):
@@ -1258,7 +1349,7 @@ class showLicense(QtWidgets.QDialog):
         self.setLayout(self.layout)
 
     def controls(self):
-        groupBox = QtWidgets.QGroupBox("Search guide RNA's")
+        groupBox = QtWidgets.QGroupBox("Show license")
 
         license_text = open(os.path.join(self.root, "gui", "text", "LICENSE.txt"), 'r', encoding="utf8").read()
         display_license = QtWidgets.QPlainTextEdit()
@@ -1269,5 +1360,44 @@ class showLicense(QtWidgets.QDialog):
 
         grid = QtWidgets.QGridLayout()
         grid.addWidget(display_license)
+        groupBox.setLayout(grid)
+        return groupBox
+
+
+class EOSpopup(QtWidgets.QDialog):
+    def __init__(self, missed_genes):
+        super(EOSpopup, self).__init__()
+        self.root = os.path.dirname(os.path.abspath(__name__))
+        self.setWindowTitle("Search completed")
+        self.setWindowIcon(QtGui.QIcon(os.path.join(self.root, "gui", "Icons", "icon.png")))
+
+        exitbtn = QtWidgets.QDialogButtonBox.Ok
+        self.exit = QtWidgets.QDialogButtonBox(exitbtn)
+        self.exit.accepted.connect(self.accept)
+
+        self.missed = missed_genes
+
+        self.initiateDialogUI()
+
+    def initiateDialogUI(self):
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.addWidget(self.controls())
+        self.layout.addWidget(self.exit)
+        self.setLayout(self.layout)
+
+    def controls(self):
+        groupBox = QtWidgets.QGroupBox("Information")
+
+        label = f"{len(self.missed)} genes had no guide RNA's" if len(self.missed) > 0 else "All genes have guide RNA's"
+        self.message = QtWidgets.QLabel(label)
+        self.textinput = QtWidgets.QPlainTextEdit()
+
+        if len(self.missed) > 0:
+            for items in self.missed:
+                self.textinput.appendPlainText(str(items))
+
+        grid = QtWidgets.QGridLayout()
+        grid.addWidget(self.message, 0, 0)
+        grid.addWidget(self.textinput, 1, 0)
         groupBox.setLayout(grid)
         return groupBox

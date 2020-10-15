@@ -1,7 +1,7 @@
 if(!require(optparse)){
   install.packages("optparse")
 }
-
+source("../R/install_bioconductor.R")
 option_list = list(
   make_option("--method", type = "character", default = NULL, action = "store",
               help = "Function to run, use 'list_options' to see methods"),
@@ -78,7 +78,7 @@ create_txdb <- function(path_to_gff, organism, tax_id, circular_chroms, bsgenome
 create_gRNA_library <- function(config_file){
   #Requires a configuration file with offTragetAnalysis settings, tab separated
   #takes a single line now, can iterate in a loop once we have more handling
-  
+
   library(CRISPRseek)
   
   initial.options <- commandArgs(trailingOnly = FALSE)
