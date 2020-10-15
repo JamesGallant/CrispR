@@ -31,13 +31,28 @@ _note_: Windows does not automatically install database files this way. To compl
 # Contribution of code to this package
 Crispinator is built using python and R. R is used to run the guide RNA predictions and is based on the CrisprSeek library. For the most part you will be working with the PyQt5 wrapper for Qt. Crispinator.py is the mainWindow. Each button calls a dialog function which can be found in src/dialogs.py. The information from dialog py can be sent back to Crispinator main window (I use dictionaries) and processed. For time consuming functions use threading, the functions used for threading can be found in workers.py. So the worklflow I use is mainwindow -> Dialog -> mainwindow -> worker -> mainwindow
 
+## Prepare the environment
 ```
 git clone -recursive https://github.com/vumc-mmi/CrispR.git
 git checkout -b yourversion
+pip install -r requirements.txt # installs the python dependencies
 ```
+
+## writing and testing python modules
 Some but not all functions have unit tests, using the discover . function may fail some tests. The unit tests are located in the tests directory and can be run from there. Make changes by creating a new unit test class or add to the existing classes and testing these changes using the test runner. Run all unit tests and make sure everything is working before commiting. 
 ```
 py -m unittest discover .
 ```
-If everything passes then submit a pull request.
+## Adding R scripts
+The R scripts are located in src/R. Remember to add bioconductor dependencies under install_bioconductor.R and Cran repositories using the following method in the script its self:
+
+```
+if(!require(optparse)){
+  install.packages("mynewlibrary")
+}
+```
+Call the R scripts using the subprocesses module in python
+
+## Credits
+CrisprSeek, GenomicRanges, BsGenome, PyQt5, qDarkStyle
 
