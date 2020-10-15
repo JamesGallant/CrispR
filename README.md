@@ -53,6 +53,16 @@ if(!require(optparse)){
 ```
 Call the R scripts using the subprocesses module in python
 
-## Credits
+## Compiling the module
+Once done compile the updated application. Any method should be fine but we use pyinstaller
+
+```
+pyinstaller --onefile --path /venv/Lib/site-packages --icon icon.ico -w Crispinator.py
+```
+Copy the Crispinator.exe from the dist folder to the new main directory and delete the dist and build folder. 
+
+I used [inno installer](https://jrsoftware.org/isinfo.php) to make the setup.exe, the script used to compile is inno.iss. Run this using inno installer to create a standalone setup.exe to distribute
+
+# Credits
 CrisprSeek, GenomicRanges, BsGenome, PyQt5, qDarkStyle
 
