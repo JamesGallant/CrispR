@@ -1,6 +1,5 @@
 import os
 import subprocess
-from subprocess import CREATE_NO_WINDOW
 
 
 class Get_gRNA:
@@ -36,4 +35,4 @@ class Get_gRNA:
         subprocess.call(["Rscript", "--vanilla", self.rscript_path,
                          "--method", "create_gRNA_library",
                          "--config_file", config_file,
-                         "--out_dir", out_dir], creationflags=CREATE_NO_WINDOW)
+                         "--out_dir", out_dir])

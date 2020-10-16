@@ -95,3 +95,4 @@ class CrispinatorUitls:
 
         revcomp = "".join([self.complement_base.get(base, "N") for base in sequence])
         return revcomp[:: -1]
+
