@@ -1,8 +1,6 @@
 import os
 import shutil
 import subprocess
-from subprocess import CREATE_NO_WINDOW
-
 
 class BSgenome:
     def __init__(self):
@@ -58,8 +56,7 @@ class BSgenome:
                          '--vanilla',
                          self.genome_build_funcs,
                          '--method', 'Remove',
-                         '--package', package],
-                        creationflags=CREATE_NO_WINDOW)
+                         '--package', package])
 
         shutil.rmtree(os.path.join(self.root, "temp"), ignore_errors=True)
 
@@ -74,7 +71,7 @@ class BSgenome:
                          self.genome_build_funcs,
                          '--method', 'Forge',
                          '--path', seedfile,
-                         '--out_dir', self.tempdir], creationflags=CREATE_NO_WINDOW)
+                         '--out_dir', self.tempdir])
 
         subprocess.call(['Rscript',
                          '--vanilla',
@@ -82,14 +79,13 @@ class BSgenome:
                          '--method', 'Build',
                          '--path',
                          os.path.join(self.root, "temp", self._dcf_metadata(seedfile=seedfile, extract='Package')),
-                         '--out_dir', self.package_dir], creationflags=CREATE_NO_WINDOW)
+                         '--out_dir', self.package_dir])
 
         subprocess.call(['Rscript',
                          '--vanilla',
                          self.genome_build_funcs,
                          '--method', 'Install',
                          '--path', os.path.join(self.package_dir,
-                                                f"{self._dcf_metadata(seedfile=seedfile, extract='Package')}_{self._dcf_metadata(seedfile=seedfile, extract='Version')}.tar.gz")],
-                        creationflags=CREATE_NO_WINDOW)
+                                                f"{self._dcf_metadata(seedfile=seedfile, extract='Package')}_{self._dcf_metadata(seedfile=seedfile, extract='Version')}.tar.gz")])
 
         shutil.rmtree(os.path.join(self.root, "temp"), ignore_errors=True)
