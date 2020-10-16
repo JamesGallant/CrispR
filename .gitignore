@@ -6,7 +6,6 @@ gRNA_tests/
 __pycache__
 .idea/
 desktop.ini
-inno.iss
 Crispinator.exe
 databases/Mycobacterium_marinum_M.db
 databasse/Mycobacterium_tuberculosis_H37Rv.db
