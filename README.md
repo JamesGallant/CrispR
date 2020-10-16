@@ -2,7 +2,7 @@
 Windows application for generating and quering a guide RNA database in bulk and includes primer design. Currently only automatic guide RNA detection and primer design is availible for Streptococcus thermophilus cas9. 
 
 # Requirements
-R version 3 or 4 (we tested on version 4), internet connection for certain functions, Windows 10 (older versions may work). 
+R version 4 (we tested on version 4), internet connection for certain functions, Windows 10 (older versions may work). 
 
 # How to install
 You need to have admin rights to install this software. Ignore warnings, I did not sign this application. 
