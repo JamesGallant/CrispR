@@ -2,7 +2,7 @@
 Windows application for generating and quering a guide RNA database in bulk and includes primer design. Currently only automatic guide RNA detection and primer design is availible for Streptococcus thermophilus cas9. 
 
 # Requirements
-R version 3 or 4 (we tested on version 4), internet connection for certain functions, Windows 10 (older versions may work). 
+R version 4 (we tested on version 4), internet connection for certain functions, Windows 10 (older versions may work). 
 
 # How to install
 You need to have admin rights to install this software. Ignore warnings, I did not sign this application. 
@@ -37,7 +37,22 @@ git clone -recursive https://github.com/vumc-mmi/CrispR.git
 git checkout -b yourversion
 pip install -r requirements.txt # installs the python dependencies
 ```
+Some empty directories are required, namely a databases folder in the main folder structure and a folder called local_packages in src
 
+```
+Crispinator
+     |
+     |-databases
+     |-gui
+         |-Icons
+         |-text
+     |-src
+         |-local_packages
+         |-py
+         |-R
+     |-tests
+
+```
 ## writing and testing python modules
 Some but not all functions have unit tests, using the discover . function may fail some tests. The unit tests are located in the tests directory and can be run from there. Make changes by creating a new unit test class or add to the existing classes and testing these changes using the test runner. Run all unit tests and make sure everything is working before commiting. 
 ```
