@@ -23,6 +23,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.offtarget_df = None
         self.database_querried = False
 
+        if "temp" in os.listdir(self.root):
+            shutil.rmtree(os.path.join(self.root, "temp"))
+
         try:
             self.availible_databases = [str(os.path.splitext(items)[0]).replace("_", " ") for items in
                                         os.listdir(os.path.join(self.root, "databases")) if items != "test.db"]
