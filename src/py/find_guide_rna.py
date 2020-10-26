@@ -1,11 +1,14 @@
 import numpy as np
 import itertools
+from Bio import pairwise2
+from Bio import Align
 
 class SmithWaterman:
     """
     Python and numpy implementation of the smith waterman algorithm.
     The algorithm has three main parts: Scoring, backtracking and calculating the start and end index
     """
+
     def __init__(self):
         pass
 
@@ -26,7 +29,8 @@ class SmithWaterman:
         matrix = np.zeros((len(reference) + 1, len(query) + 1), np.int)
 
         for reference_idx, query_idx in itertools.product(range(1, matrix.shape[0]), range(1, matrix.shape[1])):
-            match = matrix[reference_idx - 1, query_idx - 1] + (score if reference[reference_idx-1] == query[query_idx-1] else -score)
+            match = matrix[reference_idx - 1, query_idx - 1] + (
+                score if reference[reference_idx - 1] == query[query_idx - 1] else -score)
             delete = matrix[reference_idx - 1, query_idx] - gap_cost
             insert = matrix[reference_idx, query_idx - 1] - gap_cost
             matrix[reference_idx, query_idx] = max(match, delete, insert, 0)
@@ -50,3 +54,21 @@ class SmithWaterman:
         b_, pos = self.traceback(matrix, query)
         print(b_)
         return pos, pos + len(b_)
+
+
+class Pairwise:
+    def __init__(self, reference: str, sequence: str):
+        self.aligner = Align.PairwiseAligner()
+        self.aligner.mode = 'global'
+        self.aligner.open_gap_score = -0.5
+        self.aligner.extend_gap_score = -0.1
+        self.aligner.target_end_gap_score = 0.0
+        self.aligner.query_end_gap_score = 0.0
+
+        self.reference = reference
+        self.sequence = sequence
+
+    def match(self):
+        return self.aligner.align(self.reference, self.sequence)
+
+

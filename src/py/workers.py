@@ -539,7 +539,7 @@ class CrisprInterference_worker(QtCore.QRunnable):
                                    strand=self.strand,
                                    fasta_dataframe=multifasta,
                                    cas9=self.cas9_organism,
-                                   offtarget_ids=sqlrunner.custom_sql("SELECT name, strand FROM global_offtarget"))
+                                   offtarget_ids=sqlrunner.custom_sql("SELECT name, strand, annotation FROM global_offtarget"))
 
         candidates, backup, dropped = gRNA_runner.cripr_interference()
 

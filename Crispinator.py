@@ -110,11 +110,11 @@ class MainWindow(QtWidgets.QMainWindow):
         deleteDatabaseDialog.setShortcut("Ctrl+S")
         deleteDatabaseDialog.triggered.connect(lambda: self.database_functions(trigger="delete_db"))
 
-        importDatabaseAction = QtWidgets.QAction('Database', self)
+        importDatabaseAction = QtWidgets.QAction('Import Database', self)
         importDatabaseAction.setShortcut("Ctrl+T")
         importDatabaseAction.triggered.connect(self.import_database_function)
 
-        exportDatabasesAction = QtWidgets.QAction('Databases', self)
+        exportDatabasesAction = QtWidgets.QAction('Export Databases', self)
         exportDatabasesAction.setShortcut("Ctrl+Y")
         exportDatabasesAction.triggered.connect(lambda: self.exportfiles(trigger="database"))
 
