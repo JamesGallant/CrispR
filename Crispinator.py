@@ -110,11 +110,11 @@ class MainWindow(QtWidgets.QMainWindow):
         deleteDatabaseDialog.setShortcut("Ctrl+S")
         deleteDatabaseDialog.triggered.connect(lambda: self.database_functions(trigger="delete_db"))
 
-        importDatabaseAction = QtWidgets.QAction('Database', self)
+        importDatabaseAction = QtWidgets.QAction('Import', self)
         importDatabaseAction.setShortcut("Ctrl+T")
         importDatabaseAction.triggered.connect(self.import_database_function)
 
-        exportDatabasesAction = QtWidgets.QAction('Databases', self)
+        exportDatabasesAction = QtWidgets.QAction('Export', self)
         exportDatabasesAction.setShortcut("Ctrl+Y")
         exportDatabasesAction.triggered.connect(lambda: self.exportfiles(trigger="database"))
 
@@ -142,7 +142,7 @@ class MainWindow(QtWidgets.QMainWindow):
         displayGrnaDialog.setShortcut("Ctrl+J")
         displayGrnaDialog.triggered.connect(lambda: self.grna_functions(trigger="display"))
 
-        exportGuideRNA = QtWidgets.QAction("Guide RNA's", self)
+        exportGuideRNA = QtWidgets.QAction("Export", self)
         exportGuideRNA.setShortcut("Ctrl+U")
         exportGuideRNA.triggered.connect(self.export_guide_rna)
 
@@ -162,10 +162,31 @@ class MainWindow(QtWidgets.QMainWindow):
         git = QtWidgets.QAction("Source code", self)
         git.triggered.connect(lambda: self.navigate_functions(trigger="git"))
 
+        tutorial = navMenu.addMenu("tutorial")
+        tutorial_home = QtWidgets.QAction("Home", self)
+        tutorial_home.triggered.connect(lambda: self.navigate_functions(trigger="tut_home"))
+        tutorial_overview = QtWidgets.QAction("Overview", self)
+        tutorial_overview.triggered.connect(lambda: self.navigate_functions(trigger="tut_overview"))
+        tutorial_install = QtWidgets.QAction("Installation", self)
+        tutorial_install.triggered.connect(lambda: self.navigate_functions(trigger="tut_install"))
+        tutorial_database = QtWidgets.QAction("Database", self)
+        tutorial_database.triggered.connect(lambda: self.navigate_functions(trigger="tut_database"))
+        tutorial_prediction = QtWidgets.QAction("Prediction", self)
+        tutorial_prediction.triggered.connect(lambda: self.navigate_functions(trigger="tut_prediction"))
+        tutorial_crispri = QtWidgets.QAction("CrisprI", self)
+        tutorial_crispri.triggered.connect(lambda: self.navigate_functions(trigger="tut_crispri"))
+        tutorial.addAction(tutorial_home)
+        tutorial.addAction(tutorial_overview)
+        tutorial.addAction(tutorial_install)
+        tutorial.addAction(tutorial_database)
+        tutorial.addAction(tutorial_prediction)
+        tutorial.addAction(tutorial_crispri)
+
         navMenu.addAction(mycobrowser)
         navMenu.addAction(chopchop)
         navMenu.addAction(ncbi)
         navMenu.addAction(git)
+        navMenu.addMenu(tutorial)
 
         # about
         aboutMenu = menu.addMenu('About')
@@ -469,17 +490,21 @@ class MainWindow(QtWidgets.QMainWindow):
             self.sql_dialog_function()
 
     def navigate_functions(self, trigger):
-        if trigger == "mycobrowser":
-            webbrowser.open_new_tab("https://mycobrowser.epfl.ch/")
+        sites = {
+            'mycobrowser': "https://mycobrowser.epfl.ch/",
+            "chopchop": "https://chopchop.cbu.uib.no/",
+            'ncbi': "https://www.ncbi.nlm.nih.gov/",
+            'git': "https://github.com/JamesGallant/CrispR",
+            'tut_home': "https://github.com/JamesGallant/CrispR/wiki",
+            'tut_overview': "https://github.com/JamesGallant/CrispR/wiki/General-overview",
+            'tut_install': "https://github.com/JamesGallant/CrispR/wiki/Installation",
+            'tut_database': "https://github.com/JamesGallant/CrispR/wiki/Database",
+            'tut_prediction': "https://github.com/JamesGallant/CrispR/wiki/Predicting-guide-RNA's",
+            'tut_crispri': "https://github.com/JamesGallant/CrispR/wiki/CrisprI"
+        }
 
-        if trigger == "chopchop":
-            webbrowser.open_new_tab("https://chopchop.cbu.uib.no/")
-
-        if trigger == "ncbi":
-            webbrowser.open_new_tab("https://www.ncbi.nlm.nih.gov/")
-
-        if trigger == "git":
-            webbrowser.open_new_tab("https://github.com/JamesGallant/CrispR")
+        url = sites.get(trigger, "https://")
+        webbrowser.open_new_tab(url)
 
     ############ RUNNER FUNCTIONS #########
 
