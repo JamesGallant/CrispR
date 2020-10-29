@@ -22,6 +22,7 @@ class BSgenome_worker(QtCore.QRunnable):
     def run(self):
         self.bs.bsgenome_from_seed(seedfile=os.path.join(self.root, "temp", "dcf_file.dcf"))
 
+
 class Install_New_R_Package(QtCore.QRunnable):
     def __init__(self, package_name):
         super().__init__()
@@ -261,7 +262,8 @@ class CrisprInterference_worker(QtCore.QRunnable):
                                 continue
                             else:
                                 # accepts this offtarget pams as beneficial
-                                grna_dataframe['notes'][index_location] = "PASS: all off target pam mismatches are tolerated"
+                                grna_dataframe['notes'][
+                                    index_location] = "PASS: all off target pam mismatches are tolerated"
                                 grna_dataframe['score'][index_location] = grna_dataframe['score'][index_location] - 0.4
                         else:
                             pam_scales = {k: v[1] for (k, v) in availible_pams.items()}
@@ -269,13 +271,15 @@ class CrisprInterference_worker(QtCore.QRunnable):
                             if self.pam_tolerance == "high":
                                 if pam_scales.get(offtarget_pam) == "high":
                                     # accepts the off target pam if tolerance high
-                                    grna_dataframe['notes'][index_location] = "PASS: pam mismatch in off target tolerated in high fc pams"
+                                    grna_dataframe['notes'][
+                                        index_location] = "PASS: pam mismatch in off target tolerated in high fc pams"
                                     grna_dataframe['score'][index_location] = grna_dataframe['score'][
                                                                                   index_location] - 0.4
                             else:
                                 if pam_scales.get(offtarget_pam) == "low":
                                     # accepts the off target pam if tolerance low
-                                    grna_dataframe['notes'][index_location] = "PASS: pam mismatch in low off target pams tolerated"
+                                    grna_dataframe['notes'][
+                                        index_location] = "PASS: pam mismatch in low off target pams tolerated"
                                     grna_dataframe['score'][index_location] = grna_dataframe['score'][
                                                                                   index_location] - 0.4
 

@@ -3,11 +3,29 @@ import itertools
 from Bio import pairwise2
 from Bio import Align
 
-class SmithWaterman:
+
+from Bio import Align
+
+class Pairwise:
     """
-    Python and numpy implementation of the smith waterman algorithm.
-    The algorithm has three main parts: Scoring, backtracking and calculating the start and end index
+    Performs paiwise alignment using smith waterman type algos.
+    param: reference: String reference sequence to match against
+    param: query: String sequence to match, the query sequence
+    param: config: A dictionary containing the following keys {mode, extend_gap_score, target_end_gap_score,
+    query_end_gap_score}
+    defaults from https://biopython.org/docs/1.75/api/Bio.Align.html
     """
+    
+    def __init__(self, reference: str, query: str, config: dict):
+        self.aligner = Align.PairwiseAligner()
+        self.reference = reference
+        self.query = query
+        self.aligner.mode = config.get('mode', 'global')
+        self.aligner.open_gap_score = config.get('open_gap_score', -0.5)
+        self.aligner.extend_gap_score = config.get('extend_gap_score', -0.1)
+        self.aligner.target_end_gap_score = config.get('target_end_gap_score', 0.0)
+        self.aligner.query_end_gap_score = config.get('query_end_gap_score', 0.0)
+
 
     def __init__(self):
         pass
@@ -35,18 +53,22 @@ class SmithWaterman:
             insert = matrix[reference_idx, query_idx - 1] - gap_cost
             matrix[reference_idx, query_idx] = max(match, delete, insert, 0)
 
-        return matrix
 
-    def traceback(self, matrix, b, b_='', old_i=0):
-        # flip H to get index of **last** occurrence of H.max() with np.argmax()
-        H_flip = np.flip(np.flip(matrix, 0), 1)
-        i_, j_ = np.unravel_index(H_flip.argmax(), H_flip.shape)
-        i, j = np.subtract(matrix.shape, (i_ + 1, j_ + 1))  # (i, j) are **last** indexes of H.max()
-        if matrix[i, j] == 0:
-            return b_, j
+        self.reference = reference
+        self.query = query
 
-        b_ = b[j - 1] + '-' + b_ if old_i - i > 1 else b[j - 1] + b_
-        return self.traceback(matrix[0:i, 0:j], b, b_, i)
+    def align(self):
+        """
+        returns alignment object
+        """
+        return self.aligner.align(self.reference, self.query)
+
+
+    def coordinates(self):
+        """
+        returns the start and stop coordinates as a list of tuples (start, stop) from the reference
+        """
+        return [objects.aligned[0][0] for objects in sorted(self.align())]
 
     def smith_waterman(self, reference, query, match_score=3, gap_cost=2):
         reference, query = reference.upper(), query.upper()
@@ -70,5 +92,4 @@ class Pairwise:
 
     def match(self):
         return self.aligner.align(self.reference, self.sequence)
-
 
