@@ -6,6 +6,7 @@ primer = "CTCCCGCCGGAAGCGCAGATAGAAG".lower()
 class TestRunner:
     def __init__(self):
         self.runner = find_guide_rna.SmithWaterman()
+
         self.pairwise = find_guide_rna.Pairwise(reference="ttttttggacctttttggaccattt",
                                                 query="ggactt",
                                                 config={'mode': 'global',
@@ -27,6 +28,26 @@ class TestRunner:
         for objects in alignment:
             print(f"score: {objects.score}")
             print(objects)
+
+        self.pairwise = find_guide_rna.Pairwise(reference="ttttagctattttagctattt",
+                                                sequence="agcaa")
+
+    def test(self):
+        out = self.pairwise.match()
+
+        #out = self.runner.smith_waterman(reference="ggggatggggag",
+        #                                 query="atgaa")
+        print("out")
+        for alignments in sorted(out):
+            print(f"mismatch = {alignments.score}")
+            seq_idx = alignments.aligned
+            start_ref = seq_idx[0][0][0]
+            stop_ref = seq_idx[0][0][1]
+            start_ref = seq_idx[0][0][0]
+            stop_ref = seq_idx[0][0][1]
+            print(str("agcaa")[start:stop])
+
+            
     def result(self):
         pass
 
