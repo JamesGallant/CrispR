@@ -1,3 +1,7 @@
+<div align:"center">
+     <img src="app.gif">
+<\div>
+
 # Description
 Windows application for generating and quering a guide RNA database in bulk and includes primer design. Currently only automatic guide RNA detection and primer design is available for Streptococcus thermophilus cas9. 
 
