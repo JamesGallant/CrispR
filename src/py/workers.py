@@ -530,7 +530,6 @@ class CrisprInterference_worker(QtCore.QRunnable):
     def run(self):
         sqlrunner = SQL(database=os.path.join(self.root, "databases", self.database))
         gRNA_db = sqlrunner.get_global_gRNA(mismatch=str(self.mismatch))
-
         # This is a rate limiting step
         if bool(self.gene_mask_dict['genes']):
             query_data = self.get_targeted_data(dataframe=gRNA_db, gene_mask_dict=self.gene_mask_dict)
@@ -538,7 +537,6 @@ class CrisprInterference_worker(QtCore.QRunnable):
             query_data = gRNA_db
 
         multifasta = sqlrunner.get_gene_multifasta()
-
         gRNA_runner = RefineCripri(grna_dataframe=query_data,
                                    strand=self.strand,
                                    fasta_dataframe=multifasta,

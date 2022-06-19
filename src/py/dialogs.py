@@ -1388,7 +1388,7 @@ class EOSpopup(QtWidgets.QDialog):
     def controls(self):
         groupBox = QtWidgets.QGroupBox("Information")
 
-        label = f"{len(self.missed)} genes had no guide RNA's" if len(self.missed) > 0 else "All genes have guide RNA's"
+        label = f"{len(self.missed)} gene(s) had no guide RNA's" if len(self.missed) > 0 else "All genes have guide RNA's"
         self.message = QtWidgets.QLabel(label)
         self.textinput = QtWidgets.QPlainTextEdit()
 

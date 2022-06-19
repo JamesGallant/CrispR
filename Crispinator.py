@@ -682,7 +682,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def grna_display_runner(self):
         display_grna = DisplayGuideRNA(database_list=self.availible_databases, cas9_list=self.availible_cas9)
-
         if display_grna.exec_():
 
             holder = PandasModel(pd.DataFrame({'': []}))
@@ -718,7 +717,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 'masks': [items.replace("_", "").lower() if "_" in items else items.lower() for items in
                           user_options['masks']]
             }
-
             sqlrunner = SQL(database=database)
             headers = sqlrunner.custom_sql("SELECT header FROM genes").to_dict('list')
 

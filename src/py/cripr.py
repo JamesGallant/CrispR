@@ -106,7 +106,6 @@ class RefineCripri:
         gene needs to be moved for further processing. If it not found in valids then it will be moved to valid
         which disregards previous filtering criteria to reduce gRNA loss.
         """
-
         backup2 = {
             'names': [],
             'gRNA': [],
@@ -139,6 +138,7 @@ class RefineCripri:
                 backup2['rank'].append(backup['rank'][idx])
                 backup2['score'].append(backup['score'][idx])
                 backup2['notes'].append(backup['notes'][idx])
+
 
         return candidates, backup2, dropped_gRNA
 
